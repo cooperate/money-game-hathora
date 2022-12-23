@@ -1,6 +1,6 @@
 import { InternalPlayerInfo } from "../models/player";
 
-class LowestUniqueBidPlayer extends InternalPlayerInfo {
+export class LowestUniqueBidPlayer extends InternalPlayerInfo {
     public winningsPerRound: number[] = [];
     public medallionsPerRound: number[] = [];
     public chosenPaddle: number | undefined;
@@ -64,6 +64,14 @@ export class InternalLowestUniqueBid {
 
     createLowestUniqueBidPlayers(players: InternalPlayerInfo[]): LowestUniqueBidPlayer[] {
         return players.map((player) => new LowestUniqueBidPlayer(player.id, player.money, player.medallions));
+    }
+
+    getLowestUniqueBidPlayerById(playerId: string): LowestUniqueBidPlayer {
+        const player = this.players.find((player) => player.id === playerId);
+        if (!player) {
+            throw new Error("Player not found");
+        }
+        return player;
     }
 
     advanceRound(): void {

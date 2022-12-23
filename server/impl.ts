@@ -13,14 +13,21 @@ import {
   UserId,
   PrizeDraw,
   RoundGameModule,
-  HathoraEventTypes
+  HathoraEventTypes,
+  IChoosePaddleRequest,
+  ILockPaddleRequest,
+  IPutMoneyInBoxRequest,
+  IRemoveMoneyFromBoxRequest,
+  ILockMoneyRequest,
+  ISelectAPrizeRequest,
+  ILockPrizeSelectionRequest
 } from "../api/types";
 import { Card, Cards, createDeck, drawCardsFromDeck, findHighestHands } from "@pairjacks/poker-cards";
 import { InternalPlayerInfo } from "./models/player";
 import { InternalPrizeDraw } from "./game-modules/prize-draw";
-import { InternalLowestUniqueBid } from "./game-modules/lowest-unique-bid";
-import { InternalMagicMoneyMachine } from "./game-modules/magic-money-machine";
-import { InternalPickAPrize, Prize } from "./game-modules/pick-a-prize";
+import { InternalLowestUniqueBid, LowestUniqueBidPlayer } from "./game-modules/lowest-unique-bid";
+import { InternalMagicMoneyMachine, MagicMoneyMachinePlayer } from "./game-modules/magic-money-machine";
+import { InternalPickAPrize, PickAPrizePlayer, Prize } from "./game-modules/pick-a-prize";
 
 type InternalState = {
   players: InternalPlayerInfo[];
@@ -74,11 +81,11 @@ export class Impl implements Methods<InternalState> {
     state.players.forEach((player) => {
       player.status = PlayerStatus.WAITING;
     });
-    this.selectARandomGameModule(state);
+    this.selectARandomGameModule(state, ctx);
     return Response.ok();
   }
 
-  selectARandomGameModule(state: InternalState): void {
+  selectARandomGameModule(state: InternalState, ctx: Context): void {
     //create an array of all GameModule types
     const gameModules: GameModule[] = ['prize-draw', 'lowest-unique-bid', 'magic-money-machine', 'pick-a-prize'];
     //select a random game module
@@ -105,6 +112,7 @@ export class Impl implements Methods<InternalState> {
       default:
         return;
     }
+    ctx.broadcastEvent(HathoraEventTypes.newRound, `New Game Round: ${randomGameModule}`);
   }
   getUserState(state: InternalState, userId: UserId): PlayerState {
     return {
@@ -222,6 +230,93 @@ export class Impl implements Methods<InternalState> {
       ctx.broadcastEvent(HathoraEventTypes.prizeDrawNextRoundStarting, 'Starting Next Round');
       state.prizeDrawGame?.advanceRound();
     }
+    return Response.ok();
+  }
+  /*****
+   * Lowest Unique Bid
+   */
+  choosePaddle(state: InternalState, userId: UserId, ctx: Context, request: IChoosePaddleRequest): Response {
+    if (state.currentRoundGameModule !== 'lowest-unique-bid') {
+      return Response.error('Current round is not lowest-unique-bid');
+    }
+    const lowestUniqueBidPlayer = state.lowestUniqueBidGame?.getLowestUniqueBidPlayerById(userId);
+    if (lowestUniqueBidPlayer === undefined) {
+      return Response.error('Player is not in the lowest-unique-bid game');
+    }
+    state.lowestUniqueBidGame?.choosePaddle(userId, request.paddleNumber);
+    return Response.ok();
+  }
+
+  lockPaddle(state: InternalState, userId: string, ctx: Context, request: ILockPaddleRequest): Response {
+    if (state.currentRoundGameModule !== 'lowest-unique-bid') {
+      return Response.error('Current round is not lowest-unique-bid');
+    }
+    const lowestUniqueBidPlayer = state.lowestUniqueBidGame?.getLowestUniqueBidPlayerById(userId);
+    if (lowestUniqueBidPlayer === undefined) {
+      return Response.error('Player is not in the lowest-unique-bid game');
+    }
+    state.lowestUniqueBidGame?.lockPaddle(userId);  
+    return Response.ok();
+  }
+  /********
+   * Magic Money Machine
+   */
+  putMoneyInBox(state: InternalState, userId: string, ctx: Context, request: IPutMoneyInBoxRequest): Response {
+    if (state.currentRoundGameModule !== 'magic-money-machine') {
+      return Response.error('Current round is not magic-money-machine');
+    }
+    const magicMoneyMachinePlayer: MagicMoneyMachinePlayer | undefined = state.magicMoneyMachineGame?.getMagicMoneyMachinePlayerById(userId);
+    if (magicMoneyMachinePlayer === undefined) {
+      return Response.error('Player is not in the magic-money-machine game');
+    }
+    state.magicMoneyMachineGame?.putMoneyInBox(request.amount, magicMoneyMachinePlayer);  
+    return Response.ok();
+  }
+  removeMoneyFromBox(state: InternalState, userId: string, ctx: Context, request: IRemoveMoneyFromBoxRequest): Response {
+    if (state.currentRoundGameModule !== 'magic-money-machine') {
+      return Response.error('Current round is not magic-money-machine');
+    }
+    const magicMoneyMachinePlayer: MagicMoneyMachinePlayer | undefined = state.magicMoneyMachineGame?.getMagicMoneyMachinePlayerById(userId);
+    if (magicMoneyMachinePlayer === undefined) {
+      return Response.error('Player is not in the magic-money-machine game');
+    }
+    state.magicMoneyMachineGame?.removeMoneyFromBox(request.amount, magicMoneyMachinePlayer);      
+    return Response.ok();
+  }
+  lockMoney(state: InternalState, userId: string, ctx: Context, request: ILockMoneyRequest): Response {
+    if (state.currentRoundGameModule !== 'magic-money-machine') {
+      return Response.error('Current round is not magic-money-machine');
+    }
+    const magicMoneyMachinePlayer: MagicMoneyMachinePlayer | undefined = state.magicMoneyMachineGame?.getMagicMoneyMachinePlayerById(userId);
+    if (magicMoneyMachinePlayer === undefined) {
+      return Response.error('Player is not in the magic-money-machine game');
+    }
+    state.magicMoneyMachineGame?.lockMoney(magicMoneyMachinePlayer);
+    return Response.ok();
+  }
+  /********
+   * Pick a Prize
+   */
+  selectAPrize(state: InternalState, userId: string, ctx: Context, request: ISelectAPrizeRequest): Response {
+    if (state.currentRoundGameModule !== 'pick-a-prize') {
+      return Response.error('Current round is not pick-a-prize');
+    }
+    const pickAPrizePlayer: PickAPrizePlayer | undefined = state.pickAPrizeGame?.getPickAPrizePlayerById(userId);
+    if (pickAPrizePlayer === undefined) {
+      return Response.error('Player is not in the pick-a-prize game');
+    }
+    state.pickAPrizeGame?.selectAPrize(request.prizeNumber, pickAPrizePlayer);
+    return Response.ok();
+  }
+  lockPrizeSelection(state: InternalState, userId: string, ctx: Context, request: ILockPrizeSelectionRequest): Response {
+    if (state.currentRoundGameModule !== 'pick-a-prize') {
+      return Response.error('Current round is not pick-a-prize');
+    }
+    const pickAPrizePlayer: PickAPrizePlayer | undefined = state.pickAPrizeGame?.getPickAPrizePlayerById(userId);
+    if (pickAPrizePlayer === undefined) {
+      return Response.error('Player is not in the pick-a-prize game');
+    }
+    state.pickAPrizeGame?.lockPrizeSelection(pickAPrizePlayer);
     return Response.ok();
   }
 }

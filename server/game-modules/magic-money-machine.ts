@@ -1,6 +1,6 @@
 import { InternalPlayerInfo } from "../models/player";
 
-class MagicMoneyMachinePlayer extends InternalPlayerInfo {
+export class MagicMoneyMachinePlayer extends InternalPlayerInfo {
     public winningsPerRound: number[] = [];
     public moneyInGame: number = 100;
     public moneyInBox: number = 0;
@@ -36,6 +36,14 @@ export class InternalMagicMoneyMachine {
         return players.map((player) => new MagicMoneyMachinePlayer(player.id, player.money, player.medallions));
     }
 
+    getMagicMoneyMachinePlayerById(id: string): MagicMoneyMachinePlayer {
+        const player = this.players.find((player) => player.id === id);
+        if (!player) {
+            throw new Error("Player not found");
+        }
+        return player;
+    }
+
     advanceRound(): void {
         if (this.round === this.interestPerRound.length) {
             throw new Error("Maximum number of rounds reached");
@@ -56,6 +64,16 @@ export class InternalMagicMoneyMachine {
         player.moneyInBox += amount;
     }
 
+    removeMoneyFromBox(amount: number, player: MagicMoneyMachinePlayer): void {
+        if (player.lockedMoney) {
+            throw new Error("You have already locked your money");
+        }
+        if (amount > player.moneyInBox) {
+            throw new Error("You do not have that much money in your box");
+        }
+        player.moneyInGame += amount;
+        player.moneyInBox -= amount;
+    }
     lockMoney(player: MagicMoneyMachinePlayer): void {
         if (player.lockedMoney) {
             throw new Error("You have already locked your money");

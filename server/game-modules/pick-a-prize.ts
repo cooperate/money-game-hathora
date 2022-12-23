@@ -1,6 +1,6 @@
 import { InternalPlayerInfo } from "../models/player";
 
-class PickAPrizePlayer extends InternalPlayerInfo {
+export class PickAPrizePlayer extends InternalPlayerInfo {
     public winningsPerRound: number[] = [];
     public medallionsPerRound: number[] = [];
     public chosenPrize: number | undefined;
@@ -40,6 +40,14 @@ export class InternalPickAPrize {
 
     createPickAPrizePlayers(players: InternalPlayerInfo[]): PickAPrizePlayer[] {
         return players.map((player) => new PickAPrizePlayer(player.id, player.money, player.medallions));
+    }
+
+    getPickAPrizePlayerById(id: string): PickAPrizePlayer {
+        const player = this.players.find((player) => player.id === id);
+        if (player === undefined) {
+            throw new Error("Player not found");
+        }
+        return player;
     }
 
     advanceRound(): void {

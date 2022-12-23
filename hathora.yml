@@ -41,6 +41,7 @@ events:
   prizeDrawPlayersLocked: string
   prizeDrawPlayerWinnerDeclared: UserId
   prizeDrawNextRoundStarting: string
+  newRound: string
 methods:
   joinGame:
   startGame:
@@ -48,9 +49,24 @@ methods:
   transferMoney:
     amount: int
     playerIdToSendTo: string
+  #Prize Draw
   enterTicketsAmount:
     tickets: int
   lockTickets:
+  #Lowest Unique Bid
+  choosePaddle:
+    paddleNumber: int
+  lockPaddle:
+  #Magic Money Machine
+  putMoneyInBox:
+    amount: int
+  removeMoneyFromBox:
+    amount: int
+  lockMoney:
+  #Pick A Prize
+  selectAPrize:
+    prizeNumber: int
+  lockPrizeSelection:
 auth:
   anonymous: {}
 
