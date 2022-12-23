@@ -12,6 +12,9 @@ types:
     - LOWEST_UNIQUE_BID
     - MAGIC_MONEY_MACHINE
     - PICK_A_PRIZE
+  PrizeType:
+    - MONEY
+    - MEDALLION
   PlayerInfo:
     id: UserId
     money: int
@@ -24,6 +27,9 @@ types:
     roundStatus: RoundStatus
     bank: int
     prizeDraw: PrizeDraw?
+    lowestUniqueBidder: LowestUniqueBidder?
+    pickAPrize: PickAPrize?
+    magicMoneyMachine: MagicMoneyMachine?
     currentGame: RoundGameModule?
   PrizeDraw:
     players: PrizeDrawPlayers[]
@@ -37,6 +43,52 @@ types:
     id: UserId
     ticketsLocked: boolean
     roundsWon: boolean[]
+  LowestUniqueBidder:
+    players: LowestUniqueBidderPlayers[]
+    round: int
+    multipliersPerRound: int[]
+    medallionsPerRound: int[]
+    revealedPaddles: RevealedPaddle[][]
+    paddlesToChooseFrom: int[]
+    chosenPaddle: int?
+    lockedPaddle: boolean
+  LowestUniqueBidderPlayers:
+    id: UserId
+    winningsPerRound: int[]
+    medallionsPerRound: int[]
+    lockPaddle: boolean
+  RevealedPaddle:
+    playerId: UserId
+    paddle: int
+  PickAPrize:
+    players: PickAPrizePlayers[]
+    round: int
+    #TODO: These prizes should only be unveiled one at a time
+    prizesPerRound: Prize[][]
+    bonusPrizePerRound: boolean[]
+    chosenPrize: int?
+    lockPrizeSelection: boolean
+  Prize: 
+    prizeType: PrizeType
+    amount: int
+  PickAPrizePlayers:
+    id: UserId
+    winningsPerRound: int[]
+    medallionsPerRound: int[]
+    lockPrizeSelection: boolean
+  MagicMoneyMachine:
+    players: MagicMoneyMachinePlayers[]
+    round: int
+    interestPerRound: double[]
+    totalInterestPerRound: int[]
+    totalPayoutPerRound: int[]
+    moneyInHand: int
+    moneyInBox: int
+    lockedMoney: boolean
+    winningsPerRound: int[]
+  MagicMoneyMachinePlayers:
+    id: UserId
+    lockedMoney: boolean
 events:
   prizeDrawPlayersLocked: string
   prizeDrawPlayerWinnerDeclared: UserId
@@ -45,6 +97,7 @@ events:
   lowestUniqueBidPlayersLocked: string
   lowestUniqueBidPlayerWinnerDeclared: string
   lowestUniqueBidNextRoundStarting: string
+  lowestUniqueBidRevealPaddles: string
   magicMoneyMachinePlayersLocked: string
   pickAPrizePlayersLocked: string
   gameEnded: string

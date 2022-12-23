@@ -33,9 +33,10 @@ export class InternalLowestUniqueBid {
     public multiplierPerRound: number[] = [];
     public medallionsPerRound: number[] = [];
     public players: LowestUniqueBidPlayer[] = [];
-    public revealedPaddles: RevealPaddle[] = [];
+    public revealedPaddles: RevealPaddle[][] = [];
     public maxPaddle: number;
     public minPaddle = 1;
+    public paddlesToChooseFrom: number[] = [];
     constructor(
         public _players: InternalPlayerInfo[],
         public _multiplierPerRound: number[],
@@ -46,6 +47,7 @@ export class InternalLowestUniqueBid {
         this.setMedallionsPerRound(_medallionsPerRound);
         this.players = this.createLowestUniqueBidPlayers(_players);
         this.maxPaddle = this.players.length;
+        this.paddlesToChooseFrom = Array.from(Array(this.maxPaddle).keys()).map((i) => i + 1);
     }
 
     setMultiplierPerRound(multiplierPerRound: number[]): void {
@@ -80,8 +82,7 @@ export class InternalLowestUniqueBid {
         }
         //iterate over players and reset values
         this.players.forEach((player) => player.resetValues());
-        //clear revealed paddles (TODO: perhaps keep this in history)
-        this.revealedPaddles = [];
+        //clear revealed paddles
         this.round++;
     }
 
@@ -92,6 +93,13 @@ export class InternalLowestUniqueBid {
         }
         if (player.lockPaddle) {
             throw new Error("Player has already locked paddle");
+        }
+        if (paddle < this.minPaddle || paddle > this.maxPaddle) {
+            throw new Error("Invalid paddle");
+        }
+        //paddle must be inside paddlesToChooseFrom
+        if (!this.paddlesToChooseFrom.includes(paddle)) {
+            throw new Error("Invalid paddle");
         }
         player.chosenPaddle = paddle;
     }
@@ -114,32 +122,33 @@ export class InternalLowestUniqueBid {
             }
             return { playerId: player.id, paddle: player.chosenPaddle };
         });
-        this.revealedPaddles = paddles;
+        this.revealedPaddles.push(paddles);
     }
 
-    determineWinner(): LowestUniqueBidPlayer {
+    determineWinner(): LowestUniqueBidPlayer | undefined {
         //the winner is the player who has the lowest paddle not chosen by any other player
-        const chosenPaddles = this.revealedPaddles.map((paddle) => paddle.paddle);
-        const uniquePaddles = [...new Set(chosenPaddles)];
+        const chosenPaddles = this.revealedPaddles[this.round].map((paddle) => paddle.paddle);
+        //get paddles only chosen once
+        const uniquePaddles = chosenPaddles.filter((paddle) => chosenPaddles.indexOf(paddle) === chosenPaddles.lastIndexOf(paddle));
         const lowestUniquePaddle = Math.min(...uniquePaddles);
-        const winner = this.revealedPaddles.find((paddle) => paddle.paddle === lowestUniquePaddle);
-        if (!winner) {
-            throw new Error("Winner not found");
+        const winner = this.revealedPaddles[this.round].find((paddle) => paddle.paddle === lowestUniquePaddle);
+        let winningPlayer: LowestUniqueBidPlayer | undefined;
+        if (winner) {
+            winningPlayer = this.players.find((player) => player.id === winner.playerId)!;
+            //set winnings for this round
+            winningPlayer.winningsPerRound[this.round] = this.multiplierPerRound[this.round] * winner.paddle;    
+            //award the winner the medallions for the current round
+            winningPlayer.medallionsPerRound.push(this.medallionsPerRound[this.round]);
         }
-        const winningPlayer = this.players.find((player) => player.id === winner.playerId)!;
-        //set winnings for this round
-        winningPlayer.winningsPerRound[this.round] = this.multiplierPerRound[this.round] * winner.paddle;
         //set winnings for all other players
         this.players.forEach((player) => {
-            if (player.id !== winner.playerId) {
+            if (player.id !== winner?.playerId) {
                 player.winningsPerRound[this.round] = 0;
             }
         });
-        //award the winner the medallions for the current round
-        winningPlayer.medallionsPerRound.push(this.medallionsPerRound[this.round]);
         //every other player gets zero
         this.players.forEach((player) => {
-            if (player.id !== winningPlayer.id) {
+            if (player.id !== winningPlayer?.id) {
                 player.medallionsPerRound.push(0);
             }
         });

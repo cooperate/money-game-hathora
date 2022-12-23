@@ -92,8 +92,9 @@ export class InternalMagicMoneyMachine {
             totalMoneyInBoxes += player.moneyInBox;
         });
         //add interest to total money in box
-        totalMoneyInBoxes += totalMoneyInBoxes * this.interestPerRound[this.round];
-        this.totalInterestPerRound.push(totalMoneyInBoxes * this.interestPerRound[this.round]);
+        const interestPaid = Math.floor(totalMoneyInBoxes * this.interestPerRound[this.round]);
+        totalMoneyInBoxes += interestPaid;
+        this.totalInterestPerRound.push(interestPaid);
         this.totalPayoutPerRound.push(totalMoneyInBoxes);
         //divide total money in box by number of players
         let payoutPerPlayer = totalMoneyInBoxes / this.players.length;

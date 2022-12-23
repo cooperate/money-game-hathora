@@ -18,20 +18,20 @@ export class PickAPrizePlayer extends InternalPlayerInfo {
     }
 }
 
-export type PrizeType = "money" | "medallions";
-export type Prize = {
-    prizeType: PrizeType,
+export type InternalPrizeType = "money" | "medallions";
+export type InternalPrize = {
+    prizeType: InternalPrizeType,
     amount: number,
 }
 
 export class InternalPickAPrize {
     public round = 0;
     public players: PickAPrizePlayer[];
-    public prizesPerRound: Prize[][];
+    public prizesPerRound: InternalPrize[][];
     public bonusPrizePerRound: boolean[];
     constructor(
         public _players: InternalPlayerInfo[],
-        public _prizesPerRound: Prize[][],
+        public _prizesPerRound: InternalPrize[][],
     ) {
         this.players = this.createPickAPrizePlayers(_players);
         this.prizesPerRound = _prizesPerRound;
@@ -67,6 +67,9 @@ export class InternalPickAPrize {
         if (player.lockPrizeSelection) {
             throw new Error("You have already locked your prize selection");
         }
+        if (prize < 1 || prize > this.prizesPerRound[this.round].length) {
+            throw new Error("Invalid prize selection");
+        }
         player.chosenPrize = prize;
     }
 
@@ -87,15 +90,22 @@ export class InternalPickAPrize {
                     return otherPlayer.chosenPrize === player.chosenPrize;
                 });
                 if (otherPlayersWithSamePrize.length === 1) {
-                    const prize = this.prizesPerRound[this.round][player.chosenPrize];
+                    const prize = this.prizesPerRound[this.round][player.chosenPrize - 1];
                     if (prize.prizeType === "money") {
                         player.winningsPerRound.push(prize.amount);
+                        player.medallionsPerRound.push(0);
                     } else if (prize.prizeType === "medallions") {
                         player.medallionsPerRound.push(prize.amount);
+                        player.winningsPerRound.push(0);
                     }
                 } else {
                     //the bonus prize becomes nullified
                     this.bonusPrizePerRound[this.round] = false;
+                }
+                //if a player didn't receive any prize, both their winningsPerRound and medallionsPerRound are set to 0
+                if (player.winningsPerRound.length === this.round) {
+                    player.winningsPerRound.push(0);
+                    player.medallionsPerRound.push(0);
                 }
             }
         });
@@ -104,10 +114,12 @@ export class InternalPickAPrize {
             const moneyPrizes = this.prizesPerRound[this.round + 1].filter((prize) => {
                 return prize.prizeType === "money";
             });
-            const prize1 = moneyPrizes[Math.floor(Math.random() * moneyPrizes.length)];
-            const prize2 = moneyPrizes[Math.floor(Math.random() * moneyPrizes.length)];
-            prize1.amount = Math.floor(prize1.amount * 1.5);
-            prize2.amount = Math.floor(prize2.amount * 1.5);
+            const randomNumber1 = Math.floor(Math.random() * moneyPrizes.length);
+            const randomNumber2 = Math.floor(Math.random() * moneyPrizes.length);
+            const prize1 = moneyPrizes[randomNumber1];
+            const prize2 = moneyPrizes[randomNumber2];
+            prize1.amount = Math.floor(prize1.amount + 50);
+            prize2.amount = Math.floor(prize2.amount + 50);
         }
     }
 }
