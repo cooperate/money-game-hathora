@@ -3,7 +3,7 @@ import { toast, ToastContainer } from "react-toastify";
 import { useSessionstorageState } from "rooks";
 import { HathoraClient, HathoraConnection } from "../../../.hathora/client";
 import { ConnectionFailure } from "../../../.hathora/failures";
-import { IInitializeRequest, PlayerState, RoundStatus } from "../../../../api/types";
+import { IInitializeRequest, PlayerState, RoundGameModule, RoundStatus } from "../../../../api/types";
 import { lookupUser, Response, UserData } from "../../../../api/base";
 
 interface GameContext {
@@ -13,7 +13,7 @@ interface GameContext {
   disconnect: () => void;
   createGame: () => Promise<string | undefined>;
   joinGame: (gameId: string) => Promise<void>;
-  startGame: (totalChips: number, buyIn: number) => Promise<void>;
+  startGame: () => Promise<void>;
   startRound: () => Promise<void>;
   playerState?: PlayerState;
   connectionError?: ConnectionFailure;
@@ -22,10 +22,39 @@ interface GameContext {
   user?: UserData;
   connecting?: boolean;
   loggingIn?: boolean;
-  fold: () => Promise<void>;
-  call: () => Promise<void>;
-  raise: (amount: number) => Promise<void>;
+  lockPrize: () => Promise<void>;
+  selectAPrize: (prize: number) => Promise<void>;
 }
+
+export const getGameNameById = (roundGameModule: RoundGameModule | undefined): string => {
+  switch (roundGameModule) {
+    case RoundGameModule.LOWEST_UNIQUE_BID:
+      return "Lowest Unique Bid";
+    case RoundGameModule.PRIZE_DRAW:
+      return "Prize Draw";
+    case RoundGameModule.MAGIC_MONEY_MACHINE:
+      return "Magic Money Machine";
+    case RoundGameModule.PICK_A_PRIZE:
+      return "Pick a Prize";
+    default: 
+      return "Money Game";
+  }
+};
+
+export const getGameRoundByActiveGame = (roundGameModule: RoundGameModule | undefined, playerState: PlayerState | undefined): number => {
+  switch (roundGameModule) {
+    case RoundGameModule.LOWEST_UNIQUE_BID:
+      return playerState?.lowestUniqueBidder?.round || 0;
+    case RoundGameModule.PRIZE_DRAW:
+      return playerState?.prizeDraw?.round || 0;
+    case RoundGameModule.MAGIC_MONEY_MACHINE:
+      return playerState?.magicMoneyMachine?.round || 0;
+    case RoundGameModule.PICK_A_PRIZE:
+      return playerState?.pickAPrize?.round || 0;
+    default:
+      return 0;
+  }
+};
 
 interface HathoraContextProviderProps {
   children: ReactNode | ReactNode[];
@@ -146,29 +175,22 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
     [connection, playerState]
   );
 
-  const fold = useCallback(async () => {
-    if (connection) {
-      await handleResponse(connection.fold({}));
-    }
-  }, [token, connection]);
-
-  const raise = useCallback(
-    async (amount: number) => {
-      await handleResponse(connection?.raise({ amount }));
-    },
-    [token, connection]
-  );
-
-  const call = useCallback(async () => {
-    if (connection) {
-      await handleResponse(connection.call({}));
-    }
-  }, [token, connection]);
-
   const endGame = () => {
     setPlayerState(undefined);
     connection?.disconnect();
   };
+
+  const lockPrize = useCallback(async () => {
+    if (connection) {
+      await handleResponse(connection.lockPrizeSelection({}));
+    }
+  }, [connection]);
+
+  const selectAPrize = useCallback(async (prizeNumber: number) => {
+    if(connection) {
+      await handleResponse(connection.selectAPrize({ prizeNumber }));
+    }
+  }, [connection]);
 
   useEffect(() => {
     if (connectionError) {
@@ -227,9 +249,8 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
         user,
         endGame,
         getUserName,
-        fold,
-        raise,
-        call,
+        lockPrize,
+        selectAPrize,
       }}
     >
       {children}

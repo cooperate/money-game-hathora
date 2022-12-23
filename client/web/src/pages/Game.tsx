@@ -25,19 +25,6 @@ export default function Game() {
 
   return (
     <div className="h-full">
-      <div className="flex flex-row bg-slate-200 p-2 md:p-5">
-        <div className="flex flex-row justify-center items-center">
-          <Link to={"/"}>
-            <img src={Logo} style={{ height: 50 }} />
-          </Link>
-          <div>
-            Powered By{" "}
-            <strong>
-              <a href="https://github.com/hathora/hathora">Hathora</a>
-            </strong>
-          </div>
-        </div>
-      </div>
       {RenderGame()}
     </div>
   );

@@ -67,7 +67,7 @@ export class Impl implements Methods<InternalState> {
       lowestUniqueBidGame: undefined,
       magicMoneyMachineGame: undefined,
       pickAPrizeGame: undefined,
-      turnNumber: 1,
+      turnNumber: 0,
       gameStatus: 'waiting',
       gamesPlayed: []
     };
@@ -87,6 +87,7 @@ export class Impl implements Methods<InternalState> {
       return Response.error("At least 2 players required");
     }
     state.gameStatus = 'in-progress';
+    this.internalStartRound(state, ctx);
     return Response.ok();
   }
   startRound(state: InternalState, userId: UserId, ctx: Context): Response {
@@ -160,6 +161,7 @@ export class Impl implements Methods<InternalState> {
   //mapping internal server state to player state
   getUserState(state: InternalState, userId: UserId): PlayerState {
     return {
+      self: state.players.find((player) => player.id === userId),
       players: state.players.map((player) => player),
       roundStatus: state.roundStatus,
       activePlayer: state.players.length > 0 ? state.players[state.activePlayerIdx].id : undefined,

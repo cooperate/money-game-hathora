@@ -16,10 +16,13 @@ export default function Home() {
         <div className="flex flex-col justify-center items-center h-4/6 w-full text-2xl lg:text-4xl md:text-2xl font-semibold">
           <img src={Logo} style={{ width: 150 }} />
           <div>
-            <strong>Poker</strong>
+            <strong>Money Game</strong>
           </div>
           <div>
-            by <strong>Hathora</strong>
+            developed by <strong>Brett Cizmar </strong>
+          </div>
+          <div>
+            created by <strong>Tom Scott </strong>
           </div>
         </div>
         <div className="flex flex-col rounded bg-white justify-center items-center h-2/6 w-full">
