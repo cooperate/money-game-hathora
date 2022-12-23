@@ -24,7 +24,8 @@ import {
   LowestUniqueBidder,
   Prize,
   PrizeType,
-  PickAPrize
+  PickAPrize,
+  MagicMoneyMachine
 } from "../api/types";
 import { Card, Cards, createDeck, drawCardsFromDeck, findHighestHands } from "@pairjacks/poker-cards";
 import { InternalPlayerInfo } from "./models/player";
@@ -166,6 +167,7 @@ export class Impl implements Methods<InternalState> {
       prizeDraw: this.mapPrizeDraw(state.prizeDrawGame, userId),
       lowestUniqueBidder: this.mapLowestUniqueBid(state.lowestUniqueBidGame, userId),
       pickAPrize: this.mapPickAPrize(state.pickAPrizeGame, userId),
+      magicMoneyMachine: this.mapMagicMoneyMachine(state.magicMoneyMachineGame, userId),
       currentGame: this.mapToRoundGameModule(state.currentRoundGameModule),
     };
   }
@@ -188,6 +190,26 @@ export class Impl implements Methods<InternalState> {
       default:
         return undefined;
     }
+  }
+  mapMagicMoneyMachine(magicMoneyMachine: InternalMagicMoneyMachine | undefined, userId: string): MagicMoneyMachine | undefined {
+    if (magicMoneyMachine === undefined) {
+      return undefined;
+    }
+    const selfMagicMoneyMachinePlayer = magicMoneyMachine.getMagicMoneyMachinePlayerById(userId);
+    return {
+      players: magicMoneyMachine.players.map((player) => ({
+        id: player.id,
+        lockedMoney: player.lockedMoney,
+      })),
+      round: magicMoneyMachine.round,
+      interestPerRound: magicMoneyMachine.interestPerRound,
+      totalInterestPerRound: magicMoneyMachine.totalInterestPerRound,
+      totalPayoutPerRound: magicMoneyMachine.totalPayoutPerRound,
+      moneyInHand: selfMagicMoneyMachinePlayer?.moneyInHand,
+      moneyInBox: selfMagicMoneyMachinePlayer?.moneyInBox,
+      lockedMoney: selfMagicMoneyMachinePlayer?.lockedMoney,
+      winningsPerRound: selfMagicMoneyMachinePlayer?.winningsPerRound,
+    };
   }
   mapPrizeDraw(prizeDraw: InternalPrizeDraw | undefined, userId: string): PrizeDraw | undefined {
     if (prizeDraw === undefined) {

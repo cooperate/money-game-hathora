@@ -79,7 +79,7 @@ types:
   MagicMoneyMachine:
     players: MagicMoneyMachinePlayers[]
     round: int
-    interestPerRound: double[]
+    interestPerRound: float[]
     totalInterestPerRound: int[]
     totalPayoutPerRound: int[]
     moneyInHand: int
