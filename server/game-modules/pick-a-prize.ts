@@ -18,25 +18,22 @@ class PickAPrizePlayer extends InternalPlayerInfo {
     }
 }
 
-type PrizeType = "money" | "medallions";
-type Prize = {
+export type PrizeType = "money" | "medallions";
+export type Prize = {
     prizeType: PrizeType,
     amount: number,
 }
 
-export class PickAPrize {
+export class InternalPickAPrize {
     public round = 0;
-    public medallionsPerRound: number[];
     public players: PickAPrizePlayer[];
     public prizesPerRound: Prize[][];
     public bonusPrizePerRound: boolean[];
     constructor(
         public _players: InternalPlayerInfo[],
-        public _medallionsPerRound: number[],
         public _prizesPerRound: Prize[][],
     ) {
         this.players = this.createPickAPrizePlayers(_players);
-        this.medallionsPerRound = _medallionsPerRound;
         this.prizesPerRound = _prizesPerRound;
         this.bonusPrizePerRound = this.prizesPerRound.map((prizes) => true);
     }

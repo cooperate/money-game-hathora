@@ -27,7 +27,7 @@ type RevealPaddle = {
     paddle: number;
 };
 
-export class LowestUniqueBid {
+export class InternalLowestUniqueBid {
     public round = 0;
     private maxRounds: number;
     public multiplierPerRound: number[] = [];

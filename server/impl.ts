@@ -18,6 +18,9 @@ import {
 import { Card, Cards, createDeck, drawCardsFromDeck, findHighestHands } from "@pairjacks/poker-cards";
 import { InternalPlayerInfo } from "./models/player";
 import { InternalPrizeDraw } from "./game-modules/prize-draw";
+import { InternalLowestUniqueBid } from "./game-modules/lowest-unique-bid";
+import { InternalMagicMoneyMachine } from "./game-modules/magic-money-machine";
+import { InternalPickAPrize, Prize } from "./game-modules/pick-a-prize";
 
 type InternalState = {
   players: InternalPlayerInfo[];
@@ -26,10 +29,13 @@ type InternalState = {
   currentRoundGameModule?: GameModule;
   bank: number;
   medallionsAvailable: number;
-  currentGame: InternalPrizeDraw | undefined;
+  prizeDrawGame: InternalPrizeDraw | undefined;
+  lowestUniqueBidGame: InternalLowestUniqueBid | undefined;
+  magicMoneyMachineGame: InternalMagicMoneyMachine | undefined;
+  pickAPrizeGame: InternalPickAPrize | undefined;
 };
 
-type GameModule = 'prize-draw';
+type GameModule = 'prize-draw' | 'lowest-unique-bid' | 'magic-money-machine' | 'pick-a-prize';
 
 export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
@@ -40,7 +46,10 @@ export class Impl implements Methods<InternalState> {
       currentRoundGameModule: undefined,
       bank: 10000,
       medallionsAvailable: 10,
-      currentGame: undefined,
+      prizeDrawGame: undefined,
+      lowestUniqueBidGame: undefined,
+      magicMoneyMachineGame: undefined,
+      pickAPrizeGame: undefined
     };
   }
   joinGame(state: InternalState, userId: UserId): Response {
@@ -65,13 +74,37 @@ export class Impl implements Methods<InternalState> {
     state.players.forEach((player) => {
       player.status = PlayerStatus.WAITING;
     });
-    //for now, force every round to be a prize draw
-    //create a prize draw game
-    const prizeDraw = new InternalPrizeDraw(state.players, [100, 200, 300], [1, 2, 3]);
-    //set the round game module
-    state.currentRoundGameModule = 'prize-draw';
-    state.currentGame = prizeDraw;
+    this.selectARandomGameModule(state);
     return Response.ok();
+  }
+
+  selectARandomGameModule(state: InternalState): void {
+    //create an array of all GameModule types
+    const gameModules: GameModule[] = ['prize-draw', 'lowest-unique-bid', 'magic-money-machine', 'pick-a-prize'];
+    //select a random game module
+    const randomGameModule = gameModules[Math.floor(Math.random() * gameModules.length)];
+    switch(randomGameModule) {
+      case 'prize-draw':
+        //create a prize draw game
+        state.prizeDrawGame = new InternalPrizeDraw(state.players, [100, 200, 300], [1, 2, 3]);
+        //set the round game module
+        state.currentRoundGameModule = 'prize-draw';
+        break;
+      case 'lowest-unique-bid':
+        state.lowestUniqueBidGame = new InternalLowestUniqueBid(state.players, [20, 50, 100], [0, 1, 2]);
+        state.currentRoundGameModule = 'lowest-unique-bid';
+        break;
+      case 'magic-money-machine':
+        state.magicMoneyMachineGame = new InternalMagicMoneyMachine(state.players, [0.2, 0.5, 1]);
+        state.currentRoundGameModule = 'magic-money-machine';
+        break;
+      case 'pick-a-prize':
+        state.pickAPrizeGame = new InternalPickAPrize(state.players, [PRIZE_ROUND_0, PRIZE_ROUND_1, PRIZE_ROUND_2]);
+        state.currentRoundGameModule = 'pick-a-prize';
+        break;
+      default:
+        return;
+    }
   }
   getUserState(state: InternalState, userId: UserId): PlayerState {
     return {
@@ -79,10 +112,13 @@ export class Impl implements Methods<InternalState> {
       roundStatus: state.roundStatus,
       activePlayer: state.players.length > 0 ? state.players[state.activePlayerIdx].id : undefined,
       bank: state.bank,
-      prizeDraw: this.mapPrizeDraw(state.currentGame, userId),
+      prizeDraw: this.mapPrizeDraw(state.prizeDrawGame, userId),
       currentGame: this.mapToRoundGameModule(state.currentRoundGameModule),
     };
   }
+  /*******
+   * MAPPERS
+   */
   mapToRoundGameModule(gameModule: GameModule | undefined): RoundGameModule | undefined {
     if (gameModule === undefined) {
       return undefined;
@@ -113,6 +149,9 @@ export class Impl implements Methods<InternalState> {
       winningsPerRound: selfPrizeDrawPlayer?.winningsPerRound
     };
   }
+  /*********
+   * MONEY TRANSFER
+   */
   transferMoneyFromBankToPlayer(state: InternalState, userId: UserId, amount: number): void {
     //check if bank has enough money
     if (state.bank < amount) {
@@ -140,16 +179,19 @@ export class Impl implements Methods<InternalState> {
       state.players.find((player) => player.id === request.playerIdToSendTo)!.money += request.amount;
       return Response.ok();
   }
+  /**********
+   * Prize Draw
+   * ********/
   enterTicketsAmount(state: InternalState, userId: UserId, ctx: Context, request: IEnterTicketsAmountRequest): Response {
     //check if the current round is a prize draw
     if (state.currentRoundGameModule !== 'prize-draw') {
       return Response.error('Current round is not a prize draw');
     }
-    const prizeDrawPlayer = state.currentGame?.getPrizeDrawPlayer(userId);
+    const prizeDrawPlayer = state.prizeDrawGame?.getPrizeDrawPlayer(userId);
     if (prizeDrawPlayer === undefined) {
       return Response.error('Player is not in the current prize draw game');
     }
-    state.currentGame?.enterTicketsAmount(prizeDrawPlayer, request.tickets);
+    state.prizeDrawGame?.enterTicketsAmount(prizeDrawPlayer, request.tickets);
     return Response.ok();
   }
   lockTickets(state: InternalState, userId: string, ctx: Context, request: ILockTicketsRequest): Response {
@@ -157,28 +199,28 @@ export class Impl implements Methods<InternalState> {
     if (state.currentRoundGameModule !== 'prize-draw') {
       return Response.error('Current round is not a prize draw');
     }
-    const prizeDrawPlayer = state.currentGame?.getPrizeDrawPlayer(userId);
+    const prizeDrawPlayer = state.prizeDrawGame?.getPrizeDrawPlayer(userId);
     if (prizeDrawPlayer === undefined) {
       return Response.error('Player is not in the current prize draw game');
     }
-    state.currentGame?.lockTickets(prizeDrawPlayer);
+    state.prizeDrawGame?.lockTickets(prizeDrawPlayer);
 
     //if all players have locked their tickets, send an event that all players have locked their tickets
-    if (state.currentGame?.players.every((player) => player.lockTickets)) {
+    if (state.prizeDrawGame?.players.every((player) => player.lockTickets)) {
       ctx.broadcastEvent(HathoraEventTypes.prizeDrawPlayersLocked, 'All Players Have Locked In Selections, Determining Winner');
       //determine the winner
-      const winner = state.currentGame?.determineWinner();
+      const winner = state.prizeDrawGame?.determineWinner();
       if (winner === undefined) {
         return Response.error('Could not determine winner');
       }
       //delegate winnings
-      this.transferMoneyFromBankToPlayer(state, winner.id, winner.winningsPerRound[state.currentGame?.round || 0]);
-      this.transferMedallionsToPlayer(state, winner.id, state.currentGame?.medallionsPerRound[state.currentGame?.round || 0]);
+      this.transferMoneyFromBankToPlayer(state, winner.id, winner.winningsPerRound[state.prizeDrawGame?.round || 0]);
+      this.transferMedallionsToPlayer(state, winner.id, state.prizeDrawGame?.medallionsPerRound[state.prizeDrawGame?.round || 0]);
       //send an event that the winner has been determined
       ctx.broadcastEvent(HathoraEventTypes.prizeDrawPlayerWinnerDeclared, `Winner has been determined for the round: ${winner.id}`);
       //start the next round
       ctx.broadcastEvent(HathoraEventTypes.prizeDrawNextRoundStarting, 'Starting Next Round');
-      state.currentGame?.advanceRound();
+      state.prizeDrawGame?.advanceRound();
     }
     return Response.ok();
   }
@@ -187,3 +229,73 @@ export class Impl implements Methods<InternalState> {
 function createPlayer(id: UserId): InternalPlayerInfo {
   return new InternalPlayerInfo(id);
 }
+
+
+const PRIZE_ROUND_0 = [
+  {
+    prizeType: 'money',
+    amount: 20,
+  },
+  {
+    prizeType: 'money',
+    amount: 40,
+  },
+  {
+    prizeType: 'money',
+    amount: 60,
+  },
+  {
+    prizeType: 'money',
+    amount: 80,
+  },
+  {
+    prizeType: 'money',
+    amount: 100,
+  }
+] as Prize[];
+
+const PRIZE_ROUND_1 = [
+  {
+    prizeType: 'money',
+    amount: 0,
+  },
+  {
+    prizeType: 'money',
+    amount: 50,
+  },
+  {
+    prizeType: 'money',
+    amount: 50,
+  },
+  {
+    prizeType: 'money',
+    amount: 200,
+  },
+  {
+    prizeType: 'medallions',
+    amount: 2
+  }
+] as Prize[];
+
+const PRIZE_ROUND_2 = [
+  {
+    prizeType: 'money',
+    amount: 0,
+  },
+  {
+    prizeType: 'money',
+    amount: 0,
+  },
+  {
+    prizeType: 'money',
+    amount: 150,
+  },
+  {
+    prizeType: 'money',
+    amount: 150,
+  },
+  {
+    prizeType: 'medallions',
+    amount: 1
+  }
+] as Prize[];

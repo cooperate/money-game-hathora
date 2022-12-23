@@ -9,6 +9,9 @@ types:
     - COMPLETED
   RoundGameModule:
     - PRIZE_DRAW
+    - LOWEST_UNIQUE_BID
+    - MAGIC_MONEY_MACHINE
+    - PICK_A_PRIZE
   PlayerInfo:
     id: UserId
     money: int

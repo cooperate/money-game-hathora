@@ -17,7 +17,7 @@ class MagicMoneyMachinePlayer extends InternalPlayerInfo {
     }
 }
 
-export class MagicMoneyMachine {
+export class InternalMagicMoneyMachine {
     public round = 0;
     public players: MagicMoneyMachinePlayer[] = [];
     public interestPerRound: number[] = [];
