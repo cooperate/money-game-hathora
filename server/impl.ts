@@ -29,6 +29,8 @@ import { InternalLowestUniqueBid, LowestUniqueBidPlayer } from "./game-modules/l
 import { InternalMagicMoneyMachine, MagicMoneyMachinePlayer } from "./game-modules/magic-money-machine";
 import { InternalPickAPrize, PickAPrizePlayer, Prize } from "./game-modules/pick-a-prize";
 
+const TOTAL_TURNS = 4;
+type GameStatus = 'waiting' | 'in-progress' | 'finished';
 type InternalState = {
   players: InternalPlayerInfo[];
   activePlayerIdx: number;
@@ -40,6 +42,8 @@ type InternalState = {
   lowestUniqueBidGame: InternalLowestUniqueBid | undefined;
   magicMoneyMachineGame: InternalMagicMoneyMachine | undefined;
   pickAPrizeGame: InternalPickAPrize | undefined;
+  turnNumber: number;
+  gameStatus: GameStatus;
 };
 
 type GameModule = 'prize-draw' | 'lowest-unique-bid' | 'magic-money-machine' | 'pick-a-prize';
@@ -56,7 +60,9 @@ export class Impl implements Methods<InternalState> {
       prizeDrawGame: undefined,
       lowestUniqueBidGame: undefined,
       magicMoneyMachineGame: undefined,
-      pickAPrizeGame: undefined
+      pickAPrizeGame: undefined,
+      turnNumber: 0,
+      gameStatus: 'waiting'
     };
   }
   joinGame(state: InternalState, userId: UserId): Response {
@@ -73,7 +79,7 @@ export class Impl implements Methods<InternalState> {
     if (state.players.length < 2) {
       return Response.error("At least 2 players required");
     }
-
+    state.gameStatus = 'in-progress';
     return Response.ok();
   }
   startRound(state: InternalState, userId: UserId, ctx: Context): Response {
@@ -85,12 +91,25 @@ export class Impl implements Methods<InternalState> {
     return Response.ok();
   }
 
+  internalStartRound(state: InternalState, ctx: Context) {
+    //increase the turn number
+    state.turnNumber++;
+    //if the turn number is greater than the total number of turns, end the game
+    if (state.turnNumber > TOTAL_TURNS) {
+      ctx.broadcastEvent(HathoraEventTypes.gameEnded, `Game Ended`);
+      state.gameStatus = 'finished';
+      return;
+    }
+    state.roundStatus = RoundStatus.ACTIVE;
+    this.selectARandomGameModule(state, ctx);
+  }
+
   selectARandomGameModule(state: InternalState, ctx: Context): void {
     //create an array of all GameModule types
     const gameModules: GameModule[] = ['prize-draw', 'lowest-unique-bid', 'magic-money-machine', 'pick-a-prize'];
     //select a random game module
     const randomGameModule = gameModules[Math.floor(Math.random() * gameModules.length)];
-    switch(randomGameModule) {
+    switch (randomGameModule) {
       case 'prize-draw':
         //create a prize draw game
         state.prizeDrawGame = new InternalPrizeDraw(state.players, [100, 200, 300], [1, 2, 3]);
@@ -114,6 +133,7 @@ export class Impl implements Methods<InternalState> {
     }
     ctx.broadcastEvent(HathoraEventTypes.newRound, `New Game Round: ${randomGameModule}`);
   }
+  //mapping internal server state to player state
   getUserState(state: InternalState, userId: UserId): PlayerState {
     return {
       players: state.players.map((player) => player),
@@ -134,6 +154,12 @@ export class Impl implements Methods<InternalState> {
     switch (gameModule) {
       case 'prize-draw':
         return RoundGameModule.PRIZE_DRAW;
+      case 'lowest-unique-bid':
+        return RoundGameModule.LOWEST_UNIQUE_BID;
+      case 'magic-money-machine':
+        return RoundGameModule.MAGIC_MONEY_MACHINE;
+      case 'pick-a-prize':
+        return RoundGameModule.PICK_A_PRIZE;
       default:
         return undefined;
     }
@@ -142,7 +168,7 @@ export class Impl implements Methods<InternalState> {
     if (prizeDraw === undefined) {
       return undefined;
     }
-    const selfPrizeDrawPlayer = prizeDraw.getPrizeDrawPlayer(userId); 
+    const selfPrizeDrawPlayer = prizeDraw.getPrizeDrawPlayer(userId);
     return {
       players: prizeDraw.players.map((player) => ({
         id: player.id,
@@ -178,14 +204,14 @@ export class Impl implements Methods<InternalState> {
   }
 
   transferMoney(state: InternalState, userId: string, ctx: Context, request: ITransferMoneyRequest): Response {
-      //check if player has enough money to send
-      if (state.players.find((player) => player.id === userId)!.money < request.amount) {
-        return Response.error("Player does not have enough money");
-      }
-      //send money
-      state.players.find((player) => player.id === userId)!.money -= request.amount;
-      state.players.find((player) => player.id === request.playerIdToSendTo)!.money += request.amount;
-      return Response.ok();
+    //check if player has enough money to send
+    if (state.players.find((player) => player.id === userId)!.money < request.amount) {
+      return Response.error("Player does not have enough money");
+    }
+    //send money
+    state.players.find((player) => player.id === userId)!.money -= request.amount;
+    state.players.find((player) => player.id === request.playerIdToSendTo)!.money += request.amount;
+    return Response.ok();
   }
   /**********
    * Prize Draw
@@ -207,28 +233,55 @@ export class Impl implements Methods<InternalState> {
     if (state.currentRoundGameModule !== 'prize-draw') {
       return Response.error('Current round is not a prize draw');
     }
-    const prizeDrawPlayer = state.prizeDrawGame?.getPrizeDrawPlayer(userId);
+    
+    let prizeDrawPlayer;
+    try {
+      prizeDrawPlayer = state.prizeDrawGame?.getPrizeDrawPlayer(userId);
+    } catch (e) {
+      return Response.error(JSON.stringify(e));
+    }
     if (prizeDrawPlayer === undefined) {
       return Response.error('Player is not in the current prize draw game');
     }
-    state.prizeDrawGame?.lockTickets(prizeDrawPlayer);
-
+    try {
+      state.prizeDrawGame?.lockTickets(prizeDrawPlayer);
+    } catch (e) {
+      return Response.error(JSON.stringify(e));
+    }
     //if all players have locked their tickets, send an event that all players have locked their tickets
     if (state.prizeDrawGame?.players.every((player) => player.lockTickets)) {
       ctx.broadcastEvent(HathoraEventTypes.prizeDrawPlayersLocked, 'All Players Have Locked In Selections, Determining Winner');
       //determine the winner
-      const winner = state.prizeDrawGame?.determineWinner();
+      let winner;
+      try { 
+        winner = state.prizeDrawGame?.determineWinner();
+      } catch (e) {
+        return Response.error(JSON.stringify(e));
+      }
       if (winner === undefined) {
         return Response.error('Could not determine winner');
       }
       //delegate winnings
-      this.transferMoneyFromBankToPlayer(state, winner.id, winner.winningsPerRound[state.prizeDrawGame?.round || 0]);
-      this.transferMedallionsToPlayer(state, winner.id, state.prizeDrawGame?.medallionsPerRound[state.prizeDrawGame?.round || 0]);
+      try {
+        this.transferMoneyFromBankToPlayer(state, winner.id, winner.winningsPerRound[state.prizeDrawGame?.round || 0]);
+        this.transferMedallionsToPlayer(state, winner.id, state.prizeDrawGame?.medallionsPerRound[state.prizeDrawGame?.round || 0]);
+      } catch (e) {
+        return Response.error(JSON.stringify(e));
+      }
       //send an event that the winner has been determined
       ctx.broadcastEvent(HathoraEventTypes.prizeDrawPlayerWinnerDeclared, `Winner has been determined for the round: ${winner.id}`);
       //start the next round
       ctx.broadcastEvent(HathoraEventTypes.prizeDrawNextRoundStarting, 'Starting Next Round');
-      state.prizeDrawGame?.advanceRound();
+      if ((state.prizeDrawGame.maxRounds - 1) === state.prizeDrawGame.round) {
+        //start a new money game round with a new game module
+        this.internalStartRound(state, ctx);
+      } else {
+        try {
+          state.prizeDrawGame?.advanceRound();
+        } catch (e) {
+          return Response.error(JSON.stringify(e));
+        }
+      }
     }
     return Response.ok();
   }
@@ -239,7 +292,12 @@ export class Impl implements Methods<InternalState> {
     if (state.currentRoundGameModule !== 'lowest-unique-bid') {
       return Response.error('Current round is not lowest-unique-bid');
     }
-    const lowestUniqueBidPlayer = state.lowestUniqueBidGame?.getLowestUniqueBidPlayerById(userId);
+    let lowestUniqueBidPlayer;
+    try {
+      lowestUniqueBidPlayer = state.lowestUniqueBidGame?.getLowestUniqueBidPlayerById(userId);
+    } catch (e) {
+      return Response.error(JSON.stringify(e));
+    }
     if (lowestUniqueBidPlayer === undefined) {
       return Response.error('Player is not in the lowest-unique-bid game');
     }
@@ -251,11 +309,59 @@ export class Impl implements Methods<InternalState> {
     if (state.currentRoundGameModule !== 'lowest-unique-bid') {
       return Response.error('Current round is not lowest-unique-bid');
     }
-    const lowestUniqueBidPlayer = state.lowestUniqueBidGame?.getLowestUniqueBidPlayerById(userId);
+    let lowestUniqueBidPlayer;
+    try {
+      lowestUniqueBidPlayer = state.lowestUniqueBidGame?.getLowestUniqueBidPlayerById(userId);
+    } catch (e) {
+      return Response.error(JSON.stringify(e));
+    }
     if (lowestUniqueBidPlayer === undefined) {
       return Response.error('Player is not in the lowest-unique-bid game');
     }
-    state.lowestUniqueBidGame?.lockPaddle(userId);  
+    try {
+      state.lowestUniqueBidGame?.lockPaddle(userId);
+    } catch (e) {
+      return Response.error(JSON.stringify(e));
+    }
+    //if all players have locked, determine the winner
+    if (state.lowestUniqueBidGame?.players.every((player) => player.lockPaddle)) {
+      ctx.broadcastEvent(HathoraEventTypes.lowestUniqueBidPlayersLocked, 'All Players Have Locked In Selections, Determining Winner');
+      //determine the winner
+      let winner;
+      try {
+        winner = state.lowestUniqueBidGame?.determineWinner();
+      } catch (e) {
+        return Response.error(JSON.stringify(e));
+      }
+      if (winner === undefined) {
+        return Response.error('Could not determine winner');
+      }
+      //delegate winnings
+      try {
+        this.transferMoneyFromBankToPlayer(state, winner.id, winner.winningsPerRound[state.lowestUniqueBidGame?.round || 0]);
+      } catch (e: any) {
+        return Response.error(JSON.stringify(e));
+      }
+      try {
+        this.transferMedallionsToPlayer(state, winner.id, state.lowestUniqueBidGame?.medallionsPerRound[state.lowestUniqueBidGame?.round || 0]);
+      } catch (e: any) {
+        return Response.error(JSON.stringify(e));
+      }
+      //send an event that the winner has been determined
+      ctx.broadcastEvent(HathoraEventTypes.lowestUniqueBidPlayerWinnerDeclared, `Winner has been determined for the round: ${winner.id}`);
+      //start the next round
+      ctx.broadcastEvent(HathoraEventTypes.lowestUniqueBidNextRoundStarting, 'Starting Next Round');
+      if ((state.lowestUniqueBidGame.maxRounds - 1) === state.lowestUniqueBidGame.round) {
+        //start a new money game round with a new game module
+        this.internalStartRound(state, ctx);
+      } else {
+        try {
+          state.lowestUniqueBidGame?.advanceRound();
+        } catch (e: any) {
+          return Response.error(JSON.stringify(e));
+        }
+      }
+    }
     return Response.ok();
   }
   /********
@@ -269,7 +375,11 @@ export class Impl implements Methods<InternalState> {
     if (magicMoneyMachinePlayer === undefined) {
       return Response.error('Player is not in the magic-money-machine game');
     }
-    state.magicMoneyMachineGame?.putMoneyInBox(request.amount, magicMoneyMachinePlayer);  
+    try {
+      state.magicMoneyMachineGame?.putMoneyInBox(request.amount, magicMoneyMachinePlayer);
+    } catch (e) {
+      return Response.error(JSON.stringify(e));
+    }
     return Response.ok();
   }
   removeMoneyFromBox(state: InternalState, userId: string, ctx: Context, request: IRemoveMoneyFromBoxRequest): Response {
@@ -280,7 +390,11 @@ export class Impl implements Methods<InternalState> {
     if (magicMoneyMachinePlayer === undefined) {
       return Response.error('Player is not in the magic-money-machine game');
     }
-    state.magicMoneyMachineGame?.removeMoneyFromBox(request.amount, magicMoneyMachinePlayer);      
+    try {
+     state.magicMoneyMachineGame?.removeMoneyFromBox(request.amount, magicMoneyMachinePlayer);
+    } catch (e) {
+      return Response.error(JSON.stringify(e));
+    }
     return Response.ok();
   }
   lockMoney(state: InternalState, userId: string, ctx: Context, request: ILockMoneyRequest): Response {
@@ -291,7 +405,51 @@ export class Impl implements Methods<InternalState> {
     if (magicMoneyMachinePlayer === undefined) {
       return Response.error('Player is not in the magic-money-machine game');
     }
-    state.magicMoneyMachineGame?.lockMoney(magicMoneyMachinePlayer);
+    try {
+     state.magicMoneyMachineGame?.lockMoney(magicMoneyMachinePlayer);
+    } catch (e) {
+      return Response.error(JSON.stringify(e));
+    }
+    //if all players have locked, payout the players
+    if (state.magicMoneyMachineGame?.players.every((player) => player.lockedMoney)) {
+      ctx.broadcastEvent(HathoraEventTypes.magicMoneyMachinePlayersLocked, 'All Players Have Locked In Selections, Payout Players');
+      //payout players
+      try {
+        state.magicMoneyMachineGame?.payOutPlayersAtEndOfRound();
+      } catch (e) {
+        return Response.error(JSON.stringify(e));
+      }
+      //determine if we need to advance the round or start a new game module
+      if ((state.magicMoneyMachineGame.getMaxRounds() - 1) === state.magicMoneyMachineGame.round) {
+        //pay out the players from the bank given their earnings from the game
+        state.magicMoneyMachineGame.players.forEach((player) => {
+          try {
+            this.transferMoneyFromBankToPlayer(state, player.id, player.moneyInHand);
+            this.transferMoneyFromBankToPlayer(state, player.id, player.moneyInBox);
+          } catch (e: any) {
+            return Response.error(JSON.stringify(e));
+          }
+        });
+        //determine winner and award medallions
+        const winner = state.magicMoneyMachineGame.determineWinner();
+        if (winner === undefined) {
+          return Response.error('Could not determine winner');
+        }
+        try {
+          this.transferMedallionsToPlayer(state, winner.id, 2);
+        } catch (e: any) {
+          return Response.error(JSON.stringify(e));
+        }
+        //start a new money game round with a new game module
+        this.internalStartRound(state, ctx);
+      } else {
+        try {
+          state.magicMoneyMachineGame?.advanceRound();
+        } catch (e: any) {
+          return Response.error(JSON.stringify(e));
+        }
+      }
+    }
     return Response.ok();
   }
   /********
@@ -305,7 +463,11 @@ export class Impl implements Methods<InternalState> {
     if (pickAPrizePlayer === undefined) {
       return Response.error('Player is not in the pick-a-prize game');
     }
-    state.pickAPrizeGame?.selectAPrize(request.prizeNumber, pickAPrizePlayer);
+    try {
+      state.pickAPrizeGame?.selectAPrize(request.prizeNumber, pickAPrizePlayer);
+    } catch (e) {
+      return Response.error(JSON.stringify(e));
+    }
     return Response.ok();
   }
   lockPrizeSelection(state: InternalState, userId: string, ctx: Context, request: ILockPrizeSelectionRequest): Response {
@@ -316,7 +478,41 @@ export class Impl implements Methods<InternalState> {
     if (pickAPrizePlayer === undefined) {
       return Response.error('Player is not in the pick-a-prize game');
     }
-    state.pickAPrizeGame?.lockPrizeSelection(pickAPrizePlayer);
+    try {
+     state.pickAPrizeGame?.lockPrizeSelection(pickAPrizePlayer);
+    } catch (e) {
+      return Response.error(JSON.stringify(e));
+    }
+    //if all players have locked, payout the players
+    if (state.pickAPrizeGame?.players.every((player) => player.lockPrizeSelection)) {
+      ctx.broadcastEvent(HathoraEventTypes.pickAPrizePlayersLocked, 'All Players Have Locked In Selections, Payout Players');
+      //payout players
+      try {
+        state.pickAPrizeGame?.awardPrizesForRound();
+      } catch (e) {
+        return Response.error(JSON.stringify(e));
+      }
+      //pay out winnings per round
+      state.pickAPrizeGame.players.forEach((player) => {
+        try {
+          this.transferMoneyFromBankToPlayer(state, player.id, player.winningsPerRound[state.pickAPrizeGame?.round || 0]);
+          this.transferMedallionsToPlayer(state, player.id, player.medallionsPerRound[state.pickAPrizeGame?.round || 0]);
+        } catch (e: any) {
+          return Response.error(JSON.stringify(e));
+        }
+      });
+      //determine if we need to advance the round or start a new game module
+      if ((state.pickAPrizeGame.getMaxRounds() - 1) === state.pickAPrizeGame.round) {
+        //start a new money game round with a new game module
+        this.internalStartRound(state, ctx);
+      } else {
+        try {
+          state.pickAPrizeGame?.advanceRound();
+        } catch (e: any) {
+          return Response.error(JSON.stringify(e));
+        }
+      }
+    }
     return Response.ok();
   }
 }

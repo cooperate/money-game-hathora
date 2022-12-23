@@ -42,6 +42,12 @@ events:
   prizeDrawPlayerWinnerDeclared: UserId
   prizeDrawNextRoundStarting: string
   newRound: string
+  lowestUniqueBidPlayersLocked: string
+  lowestUniqueBidPlayerWinnerDeclared: string
+  lowestUniqueBidNextRoundStarting: string
+  magicMoneyMachinePlayersLocked: string
+  pickAPrizePlayersLocked: string
+  gameEnded: string
 methods:
   joinGame:
   startGame:

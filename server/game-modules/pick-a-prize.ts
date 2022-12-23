@@ -50,6 +50,10 @@ export class InternalPickAPrize {
         return player;
     }
 
+    getMaxRounds(): number {
+        return this.prizesPerRound.length;
+    }
+
     advanceRound(): void {
         if (this.round === this.prizesPerRound.length) {
             throw new Error("Maximum number of rounds reached");

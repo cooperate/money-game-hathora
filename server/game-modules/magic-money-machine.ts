@@ -2,7 +2,7 @@ import { InternalPlayerInfo } from "../models/player";
 
 export class MagicMoneyMachinePlayer extends InternalPlayerInfo {
     public winningsPerRound: number[] = [];
-    public moneyInGame: number = 100;
+    public moneyInHand: number = 100;
     public moneyInBox: number = 0;
     public lockedMoney = false;
 
@@ -53,14 +53,18 @@ export class InternalMagicMoneyMachine {
         this.round++;
     }
 
+    getMaxRounds(): number {
+        return this.interestPerRound.length;
+    }
+
     putMoneyInBox(amount: number, player: MagicMoneyMachinePlayer): void {
         if (player.lockedMoney) {
             throw new Error("You have already locked your money");
         }
-        if (amount > player.moneyInGame) {
+        if (amount > player.moneyInHand) {
             throw new Error("You do not have that much money");
         }
-        player.moneyInGame -= amount;
+        player.moneyInHand -= amount;
         player.moneyInBox += amount;
     }
 
@@ -71,7 +75,7 @@ export class InternalMagicMoneyMachine {
         if (amount > player.moneyInBox) {
             throw new Error("You do not have that much money in your box");
         }
-        player.moneyInGame += amount;
+        player.moneyInHand += amount;
         player.moneyInBox -= amount;
     }
     lockMoney(player: MagicMoneyMachinePlayer): void {
@@ -92,10 +96,13 @@ export class InternalMagicMoneyMachine {
         this.totalInterestPerRound.push(totalMoneyInBoxes * this.interestPerRound[this.round]);
         this.totalPayoutPerRound.push(totalMoneyInBoxes);
         //divide total money in box by number of players
-        const payoutPerPlayer = totalMoneyInBoxes / this.players.length;
+        let payoutPerPlayer = totalMoneyInBoxes / this.players.length;
+        //round down to nearest integer
+        payoutPerPlayer = Math.floor(payoutPerPlayer);
         //iterate over players and add payout to money
         this.players.forEach((player) => {
-            player.moneyInGame += payoutPerPlayer;
+            //Important: The money awarded goes into the box
+            player.moneyInBox += payoutPerPlayer;
             player.winningsPerRound.push(payoutPerPlayer);
         });
     }
@@ -104,7 +111,7 @@ export class InternalMagicMoneyMachine {
         //iterate over players and find player with most money
         let winner = this.players[0];
         this.players.forEach((player) => {
-            if (player.moneyInGame > winner.moneyInGame) {
+            if ((player.moneyInHand + player.moneyInBox) > (winner.moneyInHand + winner.moneyInBox)) {
                 winner = player;
             }
         });

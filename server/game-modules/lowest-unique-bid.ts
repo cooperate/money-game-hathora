@@ -29,7 +29,7 @@ type RevealPaddle = {
 
 export class InternalLowestUniqueBid {
     public round = 0;
-    private maxRounds: number;
+    public maxRounds: number;
     public multiplierPerRound: number[] = [];
     public medallionsPerRound: number[] = [];
     public players: LowestUniqueBidPlayer[] = [];

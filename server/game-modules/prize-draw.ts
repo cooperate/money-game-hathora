@@ -24,7 +24,7 @@ class PrizeDrawPlayer extends InternalPlayerInfo {
 
 export class InternalPrizeDraw {
     public round = 0;
-    private maxRounds: number;
+    public maxRounds: number;
     public potsPerRound: number[] = [];
     public medallionsPerRound: number[] = [];
     private minTicketNumber = 0;
