@@ -1,0 +1,55 @@
+types:
+  PlayerStatus:
+    - WAITING
+    - THINKING
+    - ACTIVE
+  RoundStatus:
+    - WAITING
+    - ACTIVE
+    - COMPLETED
+  RoundGameModule:
+    - PRIZE_DRAW
+  PlayerInfo:
+    id: UserId
+    money: int
+    medallions: int
+    status: PlayerStatus
+    prizeDraw: PrizeDraw?
+  PlayerState:
+    players: PlayerInfo[]
+    activePlayer: UserId?
+    roundStatus: RoundStatus
+    bank: int
+    prizeDraw: PrizeDraw?
+    currentGame: RoundGameModule?
+  PrizeDraw:
+    players: PrizeDrawPlayers[]
+    round: int
+    potsPerRound: int[]
+    medallionsPerRound: int[]
+    ticketsEntered: int?
+    ticketsLocked: boolean
+    winningsPerRound: int[]
+  PrizeDrawPlayers:
+    id: UserId
+    ticketsLocked: boolean
+    roundsWon: boolean[]
+events:
+  prizeDrawPlayersLocked: string
+  prizeDrawPlayerWinnerDeclared: UserId
+  prizeDrawNextRoundStarting: string
+methods:
+  joinGame:
+  startGame:
+  startRound:
+  transferMoney:
+    amount: int
+    playerIdToSendTo: string
+  enterTicketsAmount:
+    tickets: int
+  lockTickets:
+auth:
+  anonymous: {}
+
+userState: PlayerState
+error: string
