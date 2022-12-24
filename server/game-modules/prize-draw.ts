@@ -68,6 +68,10 @@ export class InternalPrizeDraw {
         if (player.lockTickets) {
             throw new Error("Player has already entered tickets");
         }
+        //ensure tickets is a number
+        if(isNaN(ticketAmount)) {
+            throw new Error("Ticket amount must be a number");
+        }
         if (ticketAmount < 0) {
             throw new Error("Ticket amount must be positive");
         }

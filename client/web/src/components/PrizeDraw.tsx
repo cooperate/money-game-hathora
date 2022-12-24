@@ -1,5 +1,5 @@
 import styled, { css, keyframes } from "styled-components";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWindowSize } from "rooks";
 import classNames from "classnames";
 import { PickAPrizePlayers, Prize, PrizeDraw, PrizeDrawPlayers, PrizeType } from "../../../../api/types";
@@ -46,8 +46,20 @@ const PlayerStatus = ({ winningsPerRound, medallionsPerRound }: { winningsPerRou
 )
 
 const SelectionArea = ({ prizeDraw }: { prizeDraw: PrizeDraw | undefined }) => {
+    const [tickets, setTickets] = useState<number | undefined>(undefined);
     const { user, lockTickets, enterTickets } = useHathoraContext();
     const currentRoundPotStyle = 'block max-w-sm p-6 border bg-white border-gray-200 rounded-lg shadow-md hover:bg-green-100 dark:bg-white-800 dark:border-gray-700 dark:hover:bg-green-500';
+    function componentEnterTickets(tickets: number) {
+        if (user?.id) {
+            setTickets(tickets);
+            enterTickets(tickets);
+        }
+    }
+    useEffect(() => {
+        if(prizeDraw?.ticketsLocked) {
+            setTickets(undefined);
+        }
+    }, [prizeDraw?.ticketsLocked])
     return (
         <div className="flex flex-col justify-center">
             <div className="flex flex-row justify-between">
@@ -76,7 +88,8 @@ const SelectionArea = ({ prizeDraw }: { prizeDraw: PrizeDraw | undefined }) => {
                         type="number"
                         min={prizeDraw?.minTickets}
                         max={prizeDraw?.maxTickets}
-                        onChange={(e) => enterTickets(parseFloat(e.target.value))}
+                        value={tickets}
+                        onChange={(e) => componentEnterTickets(parseFloat(e.target.value))}
                         placeholder="Enter Tickets For Prize Draw"
                         className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
                     />
