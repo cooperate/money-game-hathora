@@ -72,7 +72,7 @@ const PlayerArea = ({ players, getUserName }: { players: PrizeDrawPlayers[] | un
 }
 
 const SelectionArea = ({ prizeDraw }: { prizeDraw: PrizeDraw | undefined }) => {
-    const { user, lockPrize, selectAPrize } = useHathoraContext();
+    const { user, lockTickets, enterTickets } = useHathoraContext();
     const currentRoundPotStyle = 'block max-w-sm p-6 border bg-white border-gray-200 rounded-lg shadow-md hover:bg-green-100 dark:bg-white-800 dark:border-gray-700 dark:hover:bg-green-500';
     return (
         <div className="flex flex-col justify-center">
@@ -89,20 +89,26 @@ const SelectionArea = ({ prizeDraw }: { prizeDraw: PrizeDraw | undefined }) => {
                             <div className="text-2xl font-bold">{prizeDraw?.medallionsPerRound[index]}</div>
                         </div>
                     </div>
-                ))}    
+                ))}
             </div>
             <div>
-                <span className="text-lg font-bold">Enter Tickets For Prize Draw (Round {prizeDraw?.round})</span>
-                <input
-                type="number"
-                min={prizeDraw?.minTickets}
-                max={prizeDraw?.maxTickets}
-                onChange={(e) => {}}
-                placeholder="Enter Tickets For Prize Draw"
-                className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
-                />
+                <span className="text-lg font-bold">Enter Tickets For Prize Draw. Minimum Tickets: {prizeDraw?.minTickets}. Maximum Tickets: {prizeDraw?.maxTickets}. (Round {prizeDraw?.round})</span>
+                {prizeDraw?.ticketsLocked ?
+                    <div className="flex flex-row gap-2 justify-center">
+                        <div className="text-xl font-bold">Tickets Entered: {prizeDraw?.ticketsEntered}</div>
+                    </div>
+                    :
+                    <input
+                        type="number"
+                        min={prizeDraw?.minTickets}
+                        max={prizeDraw?.maxTickets}
+                        onChange={(e) => enterTickets(parseFloat(e.target.value))}
+                        placeholder="Enter Tickets For Prize Draw"
+                        className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
+                    />
+                }
             </div>
-            <LockButton callbackToLock={() => {}} isLocked={prizeDraw?.ticketsLocked || false} lockText="Ticket Number Is Locked" unlockText="Lock Your Ticket Number" />
+            <LockButton callbackToLock={lockTickets} isLocked={prizeDraw?.ticketsLocked || false} lockText="Ticket Number Is Locked" unlockText="Lock Your Ticket Number" />
         </div>
     )
 }

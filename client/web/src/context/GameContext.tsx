@@ -24,6 +24,8 @@ interface GameContext {
   loggingIn?: boolean;
   lockPrize: () => Promise<void>;
   selectAPrize: (prize: number) => Promise<void>;
+  lockTickets: () => Promise<void>;
+  enterTickets: (tickets: number) => Promise<void>;
 }
 
 export const getGameNameById = (roundGameModule: RoundGameModule | undefined): string => {
@@ -192,6 +194,18 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
     }
   }, [connection]);
 
+  const lockTickets = useCallback(async () => {
+    if (connection) {
+      await handleResponse(connection.lockTickets({}));
+    }
+  }, [connection]);
+
+  const enterTickets = useCallback(async (tickets: number) => {
+    if (connection) {
+      await handleResponse(connection.enterTicketsAmount({ tickets }));
+    }
+  }, [connection]);
+
   useEffect(() => {
     if (connectionError) {
       toast.error(connectionError?.message);
@@ -251,6 +265,8 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
         getUserName,
         lockPrize,
         selectAPrize,
+        lockTickets,
+        enterTickets,
       }}
     >
       {children}
