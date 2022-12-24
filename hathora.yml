@@ -37,9 +37,12 @@ types:
     round: int
     potsPerRound: int[]
     medallionsPerRound: int[]
+    minTickets: int
+    maxTickets: int
     ticketsEntered: int?
     ticketsLocked: boolean
     winningsPerRound: int[]
+    medallionsWonPerRound: int[]
   PrizeDrawPlayers:
     id: UserId
     ticketsLocked: boolean

@@ -67,13 +67,18 @@ export class InternalPickAPrize {
         if (player.lockPrizeSelection) {
             throw new Error("You have already locked your prize selection");
         }
-        if (prize < 1 || prize > this.prizesPerRound[this.round].length) {
+        if (prize < 0 || prize >= this.prizesPerRound[this.round].length) {
+            console.log(prize < 0);
+            console.log(prize >= this.prizesPerRound[this.round].length);
             throw new Error("Invalid prize selection");
         }
         player.chosenPrize = prize;
     }
 
     lockPrizeSelection(player: PickAPrizePlayer): void {
+        if(player.chosenPrize !== undefined) {
+            throw new Error("You have not selected a prize");
+        }
         if (player.lockPrizeSelection) {
             throw new Error("You have already locked your prize selection");
         }
@@ -90,7 +95,7 @@ export class InternalPickAPrize {
                     return otherPlayer.chosenPrize === player.chosenPrize;
                 });
                 if (otherPlayersWithSamePrize.length === 1) {
-                    const prize = this.prizesPerRound[this.round][player.chosenPrize - 1];
+                    const prize = this.prizesPerRound[this.round][player.chosenPrize];
                     if (prize.prizeType === "money") {
                         player.winningsPerRound.push(prize.amount);
                         player.medallionsPerRound.push(0);
@@ -110,7 +115,7 @@ export class InternalPickAPrize {
             }
         });
         //if the bonus prize is still available, randomly increase two prizes of type money by 50%
-        if (this.bonusPrizePerRound[this.round] && this.round < this.prizesPerRound.length - 1) {
+        if (this.bonusPrizePerRound[this.round] && this.round <= this.prizesPerRound.length) {
             const moneyPrizes = this.prizesPerRound[this.round + 1].filter((prize) => {
                 return prize.prizeType === "money";
             });

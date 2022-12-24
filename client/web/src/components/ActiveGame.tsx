@@ -9,6 +9,7 @@ import { rankConversion } from "../constants/rankConversion";
 import { PickAPrize, PlayerStatus, RoundGameModule, RoundStatus } from "../../../../api/types";
 import TopBar from "./TopBar";
 import PickAPrizeComponent from "./PickAPrize";
+import PrizeDraw from "./PrizeDraw";
 
 const PlayerBoard = styled.div`
   height: 100%;
@@ -45,7 +46,7 @@ export default function ActiveGame() {
     switch(playerState?.currentGame) {
       case RoundGameModule.PRIZE_DRAW:
         return (
-          <>Prize Draw</>
+          <PrizeDraw />
         );
       case RoundGameModule.LOWEST_UNIQUE_BID:
         return (

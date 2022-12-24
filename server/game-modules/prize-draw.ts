@@ -27,8 +27,8 @@ export class InternalPrizeDraw {
     public maxRounds: number;
     public potsPerRound: number[] = [];
     public medallionsPerRound: number[] = [];
-    private minTicketNumber = 0;
-    private maxTicketNumber = 20;
+    public minTicketNumber = 0;
+    public maxTicketNumber = 20;
     public players: PrizeDrawPlayer[] = [];
     constructor(
         public _players: InternalPlayerInfo[],

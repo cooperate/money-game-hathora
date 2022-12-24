@@ -224,12 +224,15 @@ export class Impl implements Methods<InternalState> {
         ticketsLocked: player?.lockTickets,
         roundsWon: player.getRoundsWon(),
       })),
+      minTickets: prizeDraw.minTicketNumber,
+      maxTickets: prizeDraw.maxTicketNumber,
       round: prizeDraw.round,
       potsPerRound: prizeDraw.potsPerRound,
       medallionsPerRound: prizeDraw.medallionsPerRound,
       ticketsEntered: selfPrizeDrawPlayer?.tickets,
       ticketsLocked: selfPrizeDrawPlayer?.lockTickets,
-      winningsPerRound: selfPrizeDrawPlayer?.winningsPerRound
+      winningsPerRound: selfPrizeDrawPlayer?.winningsPerRound,
+      medallionsWonPerRound: selfPrizeDrawPlayer?.medallionsPerRound,
     };
   }
 

@@ -1,0 +1,120 @@
+import styled, { css, keyframes } from "styled-components";
+import { useState } from "react";
+import { useWindowSize } from "rooks";
+import classNames from "classnames";
+import { PickAPrizePlayers, Prize, PrizeDraw, PrizeDrawPlayers, PrizeType } from "../../../../api/types";
+
+import { getGameNameById, getGameRoundByActiveGame, useHathoraContext } from "../context/GameContext";
+import { lockedButtonClass, lockSvg, medallionSvg, moneySvg, unlockedButtonClass, unlockSvg } from "../App";
+import LockButton from "./LockButton";
+import GameInfoModal from "./GameInfoModal";
+import { nameAbbreviation } from "./TopBar";
+import LockButtonNoInteraction from "./LockButtonNoInteraction";
+
+const Winnings = ({ winningsPerRound, medallionsPerRound }: { winningsPerRound: number[] | undefined, medallionsPerRound: number[] | undefined }) => (
+    <div className='block max-w-sm p-6 border bg-white border-gray-200 rounded-lg shadow-md hover:bg-gray-100 dark:bg-white-800 dark:border-gray-700 dark:hover:bg-gray-700'>
+        <div className="flex flex-col items-center">
+            <div className="text-lg font-bold">Winnings</div>
+            <div className="flex flex-row gap-2">
+                {winningsPerRound?.map((winnings, index) => (
+                    <div key={index} className="flex flex-col items-center">
+                        <div className="text-2xl font-bold">{winnings}</div>
+                        <div>{moneySvg()}</div>
+                    </div>
+                ))}
+            </div>
+        </div>
+        <div className="flex flex-col items-center">
+            <div className="text-lg font-bold">Medallions</div>
+            <div className="flex flex-row gap-2">
+                {medallionsPerRound?.map((medallions, index) => (
+                    <div key={index} className="flex flex-col items-center">
+                        <div className="text-2xl font-bold">{medallions}</div>
+                        <div>{medallionSvg()}</div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+)
+
+const PlayerStatus = ({ winningsPerRound, medallionsPerRound }: { winningsPerRound: number[] | undefined, medallionsPerRound: number[] | undefined }) => (
+    <div className="flex flex-row justify-center gap-4">
+        <Winnings winningsPerRound={winningsPerRound} medallionsPerRound={medallionsPerRound} />
+        <GameInfoModal title={'Prize Draw Rules'} text={'Each player selects how many tickets they would like to enter into a draw.  One ticket is drawn at random and the player who owns this ticket wins.  The player wins a sum of money.  The winnings are calculated by dividing the current rounds pot by the total amount of tickets entered by all players.  In some rounds, a medallion may be awarded as bonus.'} />
+    </div>
+)
+
+const PlayerArea = ({ players, getUserName }: { players: PrizeDrawPlayers[] | undefined, getUserName: any }) => {
+    const cardCss = 'block max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700';
+    const headerTextCss = 'mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white';
+    return (
+        <div className='flex flex-wrap m-8 gap-4'>
+            {players?.map((player: PrizeDrawPlayers, index) => (
+                <div key={index} className={cardCss}>
+                    <div className="flex flex-col items-center">
+                        <div className={headerTextCss}>{nameAbbreviation(getUserName(player.id))}</div>
+                    </div>
+                    <div className="flex flex-col items-center">
+                        <div className="text-lg font-bold dark:text-white">Rounds Won</div>
+                        {player.roundsWon.map((roundWon, index) => (
+                            <div key={index} className="flex flex-row gap-2">
+                                <div className="text-2xl font-bold">{roundWon ? "W" : "L"}</div>
+                            </div>
+                        ))}
+                    </div>
+                    <LockButtonNoInteraction isLocked={player.ticketsLocked} lockText="Prize Selection Is Locked"
+                        unlockText="Prize Selection Is Not Locked" />
+                </div>
+            ))}
+        </div>
+    )
+}
+
+const SelectionArea = ({ prizeDraw }: { prizeDraw: PrizeDraw | undefined }) => {
+    const { user, lockPrize, selectAPrize } = useHathoraContext();
+    const currentRoundPotStyle = 'block max-w-sm p-6 border bg-white border-gray-200 rounded-lg shadow-md hover:bg-green-100 dark:bg-white-800 dark:border-gray-700 dark:hover:bg-green-500';
+    return (
+        <div className="flex flex-col justify-center">
+            <div className="flex flex-row justify-between">
+                {prizeDraw?.potsPerRound.map((pot, index) => (
+                    <div key={index} className={`flex flex-col gap-2 justify-center items-center ${(index == prizeDraw?.round && currentRoundPotStyle)}`}>
+                        <div className="text-lg font-bold">Pot {index + 1}</div>
+                        <div className="flex flex-row gap-2">
+                            <div>{moneySvg()}</div>
+                            <div className="text-2xl font-bold">{pot}</div>
+                        </div>
+                        <div className="flex flex-row gap-2">
+                            <div>{medallionSvg()}</div>
+                            <div className="text-2xl font-bold">{prizeDraw?.medallionsPerRound[index]}</div>
+                        </div>
+                    </div>
+                ))}    
+            </div>
+            <div>
+                <span className="text-lg font-bold">Enter Tickets For Prize Draw (Round {prizeDraw?.round})</span>
+                <input
+                type="number"
+                min={prizeDraw?.minTickets}
+                max={prizeDraw?.maxTickets}
+                onChange={(e) => {}}
+                placeholder="Enter Tickets For Prize Draw"
+                className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
+                />
+            </div>
+            <LockButton callbackToLock={() => {}} isLocked={prizeDraw?.ticketsLocked || false} lockText="Ticket Number Is Locked" unlockText="Lock Your Ticket Number" />
+        </div>
+    )
+}
+
+export default function PrizeDrawComponent() {
+    const { playerState, user, getUserName, startRound, endGame, lockPrize, selectAPrize } = useHathoraContext();
+
+    return (
+        <div>
+            <PlayerStatus winningsPerRound={playerState?.prizeDraw?.winningsPerRound} medallionsPerRound={playerState?.prizeDraw?.medallionsWonPerRound} />
+            <SelectionArea prizeDraw={playerState?.prizeDraw} />
+            <PlayerArea players={playerState?.prizeDraw?.players.filter((player) => player.id != user?.id)} getUserName={getUserName} />
+        </div>
+    )
+}
