@@ -386,9 +386,13 @@ export class Impl implements Methods<InternalState> {
       //delegate winnings
       try {
         this.transferMoneyFromBankToPlayer(state, winner.id, winner.winningsPerRound[state.prizeDrawGame?.round || 0], ctx);
-        this.transferMedallionsToPlayer(state, winner.id, state.prizeDrawGame?.medallionsPerRound[state.prizeDrawGame?.round || 0], ctx);
       } catch (e: any) {
         return Response.error(e?.message || 'Could not delegate winnings');
+      }
+      try {
+        this.transferMedallionsToPlayer(state, winner.id, state.prizeDrawGame?.medallionsPerRound[state.prizeDrawGame?.round || 0], ctx);
+      } catch (e: any) {
+        return Response.error(e?.message || 'Could not delegate medallions');
       }
       //send an event that the winner has been determined
       ctx.broadcastEvent(HathoraEventTypes.prizeDrawPlayerWinnerDeclared, `Winner has been determined for the round: ${winner.id}`);
@@ -466,12 +470,12 @@ export class Impl implements Methods<InternalState> {
       if(winner) {
         //delegate winnings
         try {
-          this.transferMoneyFromBankToPlayer(state, winner.id, winner.winningsPerRound[state.lowestUniqueBidGame?.round || 0]);
+          this.transferMoneyFromBankToPlayer(state, winner.id, winner.winningsPerRound[state.lowestUniqueBidGame?.round || 0], ctx);
         } catch (e: any) {
           return Response.error(e?.message || 'Could not transfer money to winner');
         }
         try {
-          this.transferMedallionsToPlayer(state, winner.id, state.lowestUniqueBidGame?.medallionsPerRound[state.lowestUniqueBidGame?.round || 0]);
+          this.transferMedallionsToPlayer(state, winner.id, state.lowestUniqueBidGame?.medallionsPerRound[state.lowestUniqueBidGame?.round || 0], ctx);
         } catch (e: any) {
           return Response.error(e?.message || 'Could not transfer medallions to winner');
         }
@@ -555,10 +559,14 @@ export class Impl implements Methods<InternalState> {
         //pay out the players from the bank given their earnings from the game
         state.magicMoneyMachineGame.players.forEach((player) => {
           try {
-            this.transferMoneyFromBankToPlayer(state, player.id, player.moneyInHand);
-            this.transferMoneyFromBankToPlayer(state, player.id, player.moneyInBox);
+            this.transferMoneyFromBankToPlayer(state, player.id, player.moneyInHand, ctx);
           } catch (e: any) {
-            return Response.error(e?.message || 'Could not transfer money to player');
+            return Response.error(e?.message || 'Could not transfer money in hand to player');
+          }
+          try {
+            this.transferMoneyFromBankToPlayer(state, player.id, player.moneyInBox, ctx);
+          } catch (e: any) {
+            return Response.error(e?.message || 'Could not transfer money in box to player');
           }
         });
         //determine winner and award medallions
@@ -572,7 +580,7 @@ export class Impl implements Methods<InternalState> {
           return Response.error('Could not determine winner');
         }
         try {
-          this.transferMedallionsToPlayer(state, winner.id, 2);
+          this.transferMedallionsToPlayer(state, winner.id, 2, ctx);
         } catch (e: any) {
           return Response.error(e?.message || 'Could not transfer medallions to winner');
         }
@@ -641,10 +649,14 @@ export class Impl implements Methods<InternalState> {
       //pay out winnings per round
       state.pickAPrizeGame.players.forEach((player) => {
         try {
-          this.transferMoneyFromBankToPlayer(state, player.id, player.winningsPerRound[state.pickAPrizeGame?.round || 0]);
-          this.transferMedallionsToPlayer(state, player.id, player.medallionsPerRound[state.pickAPrizeGame?.round || 0]);
+          this.transferMoneyFromBankToPlayer(state, player.id, player.winningsPerRound[state.pickAPrizeGame?.round || 0], ctx);
         } catch (e: any) {
           return Response.error(e?.message || 'Could not transfer money to player');
+        }
+        try {
+          this.transferMedallionsToPlayer(state, player.id, player.medallionsPerRound[state.pickAPrizeGame?.round || 0], ctx);
+        } catch (e: any) {
+          return Response.error(e?.message || 'Could not transfer medallions to player');
         }
       });
       //determine if we need to advance the round or start a new game module

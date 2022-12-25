@@ -41,7 +41,7 @@ export default function Lobby({ status }: LobbyProps) {
             </div>
           </div>
         ))}
-        <div className="bg-slate-100 rounded-xl p-8 dark:bg-slate-800">
+        <div className="bg-slate-500 rounded-xl p-8 dark:bg-slate-800">
           <div className="flex justify-center">
             <p className="text-lg font-medium align-middle text-white">Bank $10000</p>
           </div>

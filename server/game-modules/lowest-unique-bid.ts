@@ -109,6 +109,9 @@ export class InternalLowestUniqueBid {
         if (!player) {
             throw new Error("Player not found");
         }
+        if(player.chosenPaddle === undefined) {
+            throw new Error("Player has not chosen paddle");
+        }
         if (player.lockPaddle) {
             throw new Error("Player has already locked paddle");
         }
