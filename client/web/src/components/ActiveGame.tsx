@@ -10,6 +10,7 @@ import { PickAPrize, PlayerStatus, RoundGameModule, RoundStatus } from "../../..
 import TopBar from "./TopBar";
 import PickAPrizeComponent from "./PickAPrize";
 import PrizeDraw from "./PrizeDraw";
+import LowestUniqueBid from "./LowestUniqueBid";
 
 const PlayerBoard = styled.div`
   height: 100%;
@@ -50,7 +51,7 @@ export default function ActiveGame() {
         );
       case RoundGameModule.LOWEST_UNIQUE_BID:
         return (
-          <>Lowest Unique Bid</>
+          <LowestUniqueBid />
         );
       case RoundGameModule.MAGIC_MONEY_MACHINE:
         return (

@@ -76,7 +76,7 @@ export class InternalPickAPrize {
     }
 
     lockPrizeSelection(player: PickAPrizePlayer): void {
-        if(player.chosenPrize !== undefined) {
+        if(player.chosenPrize == undefined) {
             throw new Error("You have not selected a prize");
         }
         if (player.lockPrizeSelection) {
