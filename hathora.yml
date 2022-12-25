@@ -20,7 +20,6 @@ types:
     money: int
     medallions: int
     status: PlayerStatus
-    prizeDraw: PrizeDraw?
   PlayerState:
     self: PlayerInfo?
     players: PlayerInfo[]

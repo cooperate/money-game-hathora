@@ -104,18 +104,22 @@ export class InternalLowestUniqueBid {
         player.chosenPaddle = paddle;
     }
 
-    lockPaddle(playerId: string): void {
+    lockPaddle(playerId: string): string | undefined {
         const player = this.players.find((player) => player.id === playerId);
         if (!player) {
-            throw new Error("Player not found");
+            //throw new Error("Player not found");
+            return "Player not found";
         }
         if(player.chosenPaddle === undefined) {
-            throw new Error("Player has not chosen paddle");
+            //throw new Error("Player has not chosen paddle");
+            return "Player has not chosen paddle";
         }
         if (player.lockPaddle) {
-            throw new Error("Player has already locked paddle");
+            //throw new Error("Player has already locked paddle");
+            return "Player has already locked paddle";
         }
         player.lockPaddle = true;
+        return undefined;
     }
 
     revealPaddles(): void {

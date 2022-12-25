@@ -39,6 +39,10 @@ export class InternalPrizeDraw {
         this.setPotsPerRound(_potsPerRound);
         this.setMedallionsPerRound(_medallionsPerRound);
         this.players = this.createPrizeDrawPlayers(_players);
+        //iterate through players and choose paddle 0
+        this.players.forEach((player) => {
+            this.enterTicketsAmount(player, 0);
+        });
     }
 
     setPotsPerRound(potsPerRound: number[]): void {
@@ -62,6 +66,9 @@ export class InternalPrizeDraw {
         //iterate over players and reset values
         this.players.forEach((player) => player.resetValues());
         this.round++;
+        this.players.forEach((player) => {
+            this.enterTicketsAmount(player, 0);
+        });
     }
 
     enterTicketsAmount(player: PrizeDrawPlayer, ticketAmount: number): void {

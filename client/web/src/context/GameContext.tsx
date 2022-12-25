@@ -3,7 +3,7 @@ import { toast, ToastContainer } from "react-toastify";
 import { useSessionstorageState } from "rooks";
 import { HathoraClient, HathoraConnection } from "../../../.hathora/client";
 import { ConnectionFailure } from "../../../.hathora/failures";
-import { HathoraEventTypes, IInitializeRequest, PlayerState, RoundGameModule, RoundStatus } from "../../../../api/types";
+import { HathoraEvents, HathoraEventTypes, IInitializeRequest, PlayerState, RoundGameModule, RoundStatus } from "../../../../api/types";
 import { lookupUser, Response, UserData } from "../../../../api/base";
 
 export type HathoraEvent = {type: HathoraEventTypes.newRound; val: string} | {type: HathoraEventTypes.moneyTransfer; val: string} | {type: HathoraEventTypes.medallionTransfer; val: string}
@@ -94,7 +94,7 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
   const [token, setToken] = useSessionstorageState<string>(client.appId, "");
   const [connection, setConnection] = useState<HathoraConnection>();
   const [playerState, setPlayerState] = useState<PlayerState>();
-  const [events, setEvents] = useState<string[]>();
+  const [events, setEvents] = useState<HathoraEvents[]>();
   const [connectionError, setConnectionError] = useState<ConnectionFailure>();
   const [connecting, setConnecting] = useState<boolean>();
   const [loggingIn, setLoggingIn] = useState<boolean>();
@@ -130,7 +130,10 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
   const connect = useCallback(
     async (stateId: string) => {
       setConnecting(true);
-      const connection = await client.connect(token, stateId, ({ state }) => setPlayerState(state), setConnectionError);
+      const connection = await client.connect(token, stateId, ({ state, events } : { state: PlayerState, events: HathoraEvents[]}) => {
+        setPlayerState(state)
+        setEvents(events)
+      }, setConnectionError);
       setConnection(connection);
       setConnecting(false);
       return connection;
@@ -272,16 +275,17 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
 
   useEffect(() => {
     if (playerState?.activePlayer && playerState.roundStatus === RoundStatus.ACTIVE) {
-      if (playerState?.activePlayer === user?.id) {
-        toast.success(`It's your turn`, { position: "top-center", hideProgressBar: true });
-      } else {
-        toast.info(`it is ${getUserName(playerState?.activePlayer)}'s turn`, {
-          position: "top-center",
-          hideProgressBar: true,
-        });
-      }
     }
   }, [playerState?.activePlayer, playerState?.roundStatus]);
+
+  useEffect(() => {
+    //create a toast message for events
+    //get last index from events array
+    //iterate through events array and create a toast for each event
+    events?.map((event: HathoraEvents) => {
+      toast(event.val, { position: "top-center" });
+    });
+  }, [events]);
 
   return (
     <HathoraContext.Provider
@@ -314,7 +318,7 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
     >
       {children}
       <ToastContainer
-        autoClose={1000}
+        autoClose={2000}
         limit={3}
         newestOnTop={true}
         position="top-center"

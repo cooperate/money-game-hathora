@@ -27,7 +27,6 @@ import {
   PickAPrize,
   MagicMoneyMachine
 } from "../api/types";
-import { Card, Cards, createDeck, drawCardsFromDeck, findHighestHands } from "@pairjacks/poker-cards";
 import { InternalPlayerInfo } from "./models/player";
 import { InternalPrizeDraw } from "./game-modules/prize-draw";
 import { InternalLowestUniqueBid, LowestUniqueBidPlayer } from "./game-modules/lowest-unique-bid";
@@ -302,8 +301,9 @@ export class Impl implements Methods<InternalState> {
     }
     state.players.find((player) => player.id === userId)!.money += amount;
     state.bank -= amount;
-
-    ctx.sendEvent(HathoraEventTypes.moneyTransfer, `You were just transfered $${amount}!`, userId);
+    if(amount > 0) {
+      ctx.sendEvent(HathoraEventTypes.moneyTransfer, `You were just transferred $${amount}!`, userId);
+    }
   }
   transferMedallionsToPlayer(state: InternalState, userId: UserId, amount: number, ctx: Context): void {
     //check if there are enough medallions left
@@ -313,7 +313,9 @@ export class Impl implements Methods<InternalState> {
     state.players.find((player) => player.id === userId)!.medallions += amount;
     state.medallionsAvailable -= amount;
 
-    ctx.sendEvent(HathoraEventTypes.medallionTransfer, `You were just transfered ${amount} medallion!`, userId);
+    if(amount > 0) {
+      ctx.sendEvent(HathoraEventTypes.medallionTransfer, `You were just transferred ${amount} medallion!`, userId);
+    }
   }
 
   transferMoney(state: InternalState, userId: string, ctx: Context, request: ITransferMoneyRequest): Response {
@@ -448,11 +450,14 @@ export class Impl implements Methods<InternalState> {
     if (lowestUniqueBidPlayer === undefined) {
       return Response.error('Player is not in the lowest-unique-bid game');
     }
-    try {
-      state.lowestUniqueBidGame?.lockPaddle(userId);
-    } catch (e: any) {
-      return Response.error(e?.message || 'Could not lock paddle');
-    }
+    //try {
+      const lockedPaddle = state.lowestUniqueBidGame?.lockPaddle(userId);
+      if (lockedPaddle !== undefined) {
+        return Response.error('Could not lock paddle');
+      }
+    // } catch (e: any) {
+    //   return Response.error(e?.message || 'Could not lock paddle');
+    // }
     //if all players have locked, determine the winner
     if (state.lowestUniqueBidGame?.players.every((player) => player.lockPaddle)) {
       ctx.broadcastEvent(HathoraEventTypes.lowestUniqueBidPlayersLocked, 'All Players Have Locked In Selections, Determining Winner');
