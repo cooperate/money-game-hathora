@@ -5,6 +5,7 @@ import classNames from "classnames";
 
 import { getGameNameById, getGameRoundByActiveGame, useHathoraContext } from "../context/GameContext";
 import { medallionSvg, moneySvg } from "../App";
+import { RoundGameModule } from "../../../../api/types";
 
 export function nameAbbreviation(name: string) {
     //split name by spaces and hypens
@@ -56,9 +57,19 @@ export default function TopBar() {
 
                 <div className="flex flex-col justify-content lg:flex-row items-center gap-1 lg:gap-4">
                     <span className="lg:pl-0 text-gray-700">{getGameNameById(playerState?.currentGame)}</span>
-                    <span className="hidden lg:block">|</span>
-                    <span className="lg:pl-0 text-gray-700 flex flex-row gap-2">
-                        <span>Round</span> {getGameRoundByActiveGame(playerState?.currentGame, playerState) + 1}</span>
+                    {playerState?.currentGame === RoundGameModule.TRADING ?
+                    <>
+                        <span className="hidden lg:block">|</span>
+                        <span className="lg:pl-0 text-gray-700 flex flex-row gap-2">
+                            <span>Round</span> {getGameRoundByActiveGame(playerState?.currentGame, playerState) + 1}
+                        </span>
+                    </> :
+                    <span>
+                        <span className="lg:pl-0 text-gray-700 flex flex-row gap-2">
+                            Make Deals, Exchange Money    
+                        </span>
+                    </span>
+                    }
                 </div>
 
                 <div className="flex flex-row items-center gap-4">

@@ -103,8 +103,8 @@ export class InternalMagicMoneyMachine {
         payoutPerPlayer = Math.floor(payoutPerPlayer);
         //iterate over players and add payout to money
         this.players.forEach((player) => {
-            //Important: The money awarded goes into the box
-            player.moneyInBox += payoutPerPlayer;
+            //Important: The money awarded goes into the box and replaces the previous money in the box
+            player.moneyInBox = payoutPerPlayer;
             player.winningsPerRound.push(payoutPerPlayer);
         });
     }

@@ -38,6 +38,7 @@ interface GameContext {
 }
 
 export const getGameNameById = (roundGameModule: RoundGameModule | undefined): string => {
+  console.log("roundGameModule", roundGameModule)
   switch (roundGameModule) {
     case RoundGameModule.LOWEST_UNIQUE_BID:
       return "Lowest Unique Bid";
@@ -47,6 +48,8 @@ export const getGameNameById = (roundGameModule: RoundGameModule | undefined): s
       return "Magic Money Machine";
     case RoundGameModule.PICK_A_PRIZE:
       return "Pick a Prize";
+    case RoundGameModule.TRADING:
+      return "Trading";
     default: 
       return "Money Game";
   }

@@ -204,6 +204,8 @@ export class Impl implements Methods<InternalState> {
         return RoundGameModule.MAGIC_MONEY_MACHINE;
       case 'pick-a-prize':
         return RoundGameModule.PICK_A_PRIZE;
+      case 'trading':
+        return RoundGameModule.TRADING;
       default:
         return undefined;
     }
@@ -345,6 +347,9 @@ export class Impl implements Methods<InternalState> {
     //send money
     state.players.find((player) => player.id === userId)!.money -= request.amount;
     state.players.find((player) => player.id === request.playerIdToSendTo)!.money += request.amount;
+    if(request?.amount > 0) {
+      ctx.sendEvent(HathoraEventTypes.moneyTransfer, `You were just transferred $${request?.amount}!`, request?.playerIdToSendTo);
+    }
     return Response.ok();
   }
   /**********

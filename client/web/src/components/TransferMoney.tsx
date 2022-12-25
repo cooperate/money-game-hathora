@@ -11,18 +11,29 @@ import GameInfoModal from "./GameInfoModal";
 import { nameAbbreviation } from "./TopBar";
 import LockButtonNoInteraction from "./LockButtonNoInteraction";
 
-
+interface PlayersMoney {
+    playerId: string;
+    amount: number;
+}
 const SelectionArea = ({ players }: { players: PlayerInfo[] | undefined }) => {
     const { getUserName, transferMoney } = useHathoraContext();
+    const [moneyToSend, setMoneyToSend] = useState<PlayersMoney[]>([]);
     const cardCss = 'block max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700';
     const headerTextCss = 'mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white';
 
     const componentEnterAmount = (playerId: string, amount: number, ref: any) => {
-        transferMoney(amount, playerId);
+        setMoneyToSend(prevState => [...prevState, { playerId, amount }]);
         //clear ref input value
         ref.target.value = "";
     }
 
+    const transferMoneyComponent = (playerId: string) => {
+        const playerMoney = moneyToSend.find((player) => player.playerId === playerId);
+        if (playerMoney) {
+            transferMoney(playerMoney.amount, playerId);
+        }
+    }
+    
     return (
         <div className="flex flex-col justify-center">
             <div className="flex flex-wrap justify-center gap-1">
@@ -34,9 +45,14 @@ const SelectionArea = ({ players }: { players: PlayerInfo[] | undefined }) => {
                         <input
                             type="number"
                             onChange={(e) => componentEnterAmount(player.id, parseFloat(e.target.value), e)}
-                            placeholder="Enter Tickets For Prize Draw"
+                            placeholder="Enter Money To Transfer"
                             className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
                         />
+                        <button onClick={() => transferMoneyComponent(player.id)} className="p-1 ml-auto bg-transparent border-0 text-black opacity-5 float-right text-3xl leading-none font-semibold outline-none focus:outline-none">
+                            <span className="bg-transparent text-black opacity-5 h-6 w-6 text-2xl block outline-none focus:outline-none">
+                                Send Money
+                            </span>
+                        </button>
                         <LockButtonNoInteraction isLocked={player?.lockedTrade} lockText={"Has finished trading."} unlockText={"Still Trading."} />
                     </div>
                 ))}
@@ -56,14 +72,14 @@ const PlayerStatus = ({ money, lockedTrade }: { money: number | undefined, locke
                 <div className="text-2xl font-bold">{money || 'unavailable'}</div>
             </div>
         </div>
-        <LockButton callbackToLock={() => lockTrading()} isLocked={lockedTrade || false} lockText={"Done trading."} unlockText={"Still trading."} />
+        <LockButton callbackToLock={() => lockTrading()} isLocked={lockedTrade || false} lockText={"Done trading."} unlockText={"Click To Finish Trading."} />
     </div>)
 }
 export default function TransferMoneyComponent() {
     const { playerState, user, getUserName, startRound, endGame, lockPrize, selectAPrize } = useHathoraContext();
 
     return (
-        <div>
+        <div className="flex flex-col gap-4">
             <PlayerStatus money={playerState?.self?.money} lockedTrade={playerState?.self?.lockedTrade} />
             <SelectionArea players={playerState?.players.filter(player => player.id != user?.id)} />
         </div>
