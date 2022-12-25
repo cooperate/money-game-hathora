@@ -10,6 +10,7 @@ import PickAPrizeComponent from "./PickAPrize";
 import PrizeDraw from "./PrizeDraw";
 import LowestUniqueBid from "./LowestUniqueBid";
 import MagicMoneyMachine from "./MagicMoneyMachine";
+import TransferMoneyComponent from "./TransferMoney";
 
 const PlayerBoard = styled.div`
   height: 100%;
@@ -59,6 +60,10 @@ export default function ActiveGame() {
       case RoundGameModule.PICK_A_PRIZE:
         return (
           <PickAPrizeComponent />
+        );
+      case RoundGameModule.TRADING:
+        return (
+          <TransferMoneyComponent />
         );
     }
   }

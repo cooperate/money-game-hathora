@@ -1,3 +1,4 @@
+import { ServerError } from "../impl";
 import { InternalPlayerInfo } from "../models/player";
 
 export class PickAPrizePlayer extends InternalPlayerInfo {
@@ -63,24 +64,24 @@ export class InternalPickAPrize {
         this.round++;
     }
 
-    selectAPrize(prize: number, player: PickAPrizePlayer): void {
+    selectAPrize(prize: number, player: PickAPrizePlayer): void | ServerError {
         if (player.lockPrizeSelection) {
-            throw new Error("You have already locked your prize selection");
+            return "You have already locked your prize selection";
         }
         if (prize < 0 || prize >= this.prizesPerRound[this.round].length) {
             console.log(prize < 0);
             console.log(prize >= this.prizesPerRound[this.round].length);
-            throw new Error("Invalid prize selection");
+            return "Invalid prize selection";
         }
         player.chosenPrize = prize;
     }
 
-    lockPrizeSelection(player: PickAPrizePlayer): void {
+    lockPrizeSelection(player: PickAPrizePlayer): void | ServerError {
         if(player.chosenPrize == undefined) {
-            throw new Error("You have not selected a prize");
+            return "You have not selected a prize";
         }
         if (player.lockPrizeSelection) {
-            throw new Error("You have already locked your prize selection");
+            return "You have already locked your prize selection";
         }
         player.lockPrizeSelection = true;
     }
@@ -108,7 +109,7 @@ export class InternalPickAPrize {
                     this.bonusPrizePerRound[this.round] = false;
                 }
                 //if a player didn't receive any prize, both their winningsPerRound and medallionsPerRound are set to 0
-                if (player.winningsPerRound.length === this.round) {
+                if ((player.winningsPerRound.length - 1) === this.round) {
                     player.winningsPerRound.push(0);
                     player.medallionsPerRound.push(0);
                 }

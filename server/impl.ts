@@ -25,15 +25,18 @@ import {
   Prize,
   PrizeType,
   PickAPrize,
-  MagicMoneyMachine
+  MagicMoneyMachine,
+  ILockTradingRequest
 } from "../api/types";
 import { InternalPlayerInfo } from "./models/player";
-import { InternalPrizeDraw } from "./game-modules/prize-draw";
+import { InternalPrizeDraw, PrizeDrawPlayer } from "./game-modules/prize-draw";
 import { InternalLowestUniqueBid, LowestUniqueBidPlayer } from "./game-modules/lowest-unique-bid";
 import { InternalMagicMoneyMachine, MagicMoneyMachinePlayer } from "./game-modules/magic-money-machine";
 import { InternalPickAPrize, PickAPrizePlayer, InternalPrize, InternalPrizeType } from "./game-modules/pick-a-prize";
 
 const TOTAL_TURNS = 4;
+
+export type ServerError = string;
 type GameStatus = 'waiting' | 'in-progress' | 'finished';
 type InternalState = {
   players: InternalPlayerInfo[];
@@ -51,7 +54,7 @@ type InternalState = {
   gamesPlayed: GameModule[];
 };
 
-type GameModule = 'prize-draw' | 'lowest-unique-bid' | 'magic-money-machine' | 'pick-a-prize';
+type GameModule = 'prize-draw' | 'lowest-unique-bid' | 'magic-money-machine' | 'pick-a-prize' | 'trading';
 
 export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
@@ -112,9 +115,15 @@ export class Impl implements Methods<InternalState> {
       state.gamesPlayed.push(state.currentRoundGameModule);
     }
     state.roundStatus = RoundStatus.ACTIVE;
-    this.selectARandomGameModule(state, ctx);
+    //start trading round
+    this.startTradingRound(state, ctx);
   }
 
+  startTradingRound(state: InternalState, ctx: Context) {
+    state.currentRoundGameModule = 'trading';
+    
+    ctx.broadcastEvent(HathoraEventTypes.startTradingRound, `Trading Round Started`);
+  }
   selectARandomGameModule(state: InternalState, ctx: Context): void {
     //create an array of all GameModule types
     let gameModules: GameModule[] = ['prize-draw', 'lowest-unique-bid', 'magic-money-machine', 'pick-a-prize'];
@@ -161,7 +170,7 @@ export class Impl implements Methods<InternalState> {
   getUserState(state: InternalState, userId: UserId): PlayerState {
     return {
       self: state.players.find((player) => player.id === userId),
-      players: state.players.map((player) => player),
+      players: this.mapToPlayerInfo(state.players),
       roundStatus: state.roundStatus,
       activePlayer: state.players.length > 0 ? state.players[state.activePlayerIdx].id : undefined,
       bank: state.bank,
@@ -175,6 +184,13 @@ export class Impl implements Methods<InternalState> {
   /*******
    * MAPPERS
    */
+   mapToPlayerInfo(players: InternalPlayerInfo[]): PlayerInfo[] {
+    return players.map((player) => ({
+        id: player.id,
+        lockedTrade: player.lockedTrade,
+    }));
+  }
+      
   mapToRoundGameModule(gameModule: GameModule | undefined): RoundGameModule | undefined {
     if (gameModule === undefined) {
       return undefined;
@@ -319,6 +335,9 @@ export class Impl implements Methods<InternalState> {
   }
 
   transferMoney(state: InternalState, userId: string, ctx: Context, request: ITransferMoneyRequest): Response {
+    if(state.currentRoundGameModule !== 'trading') {
+      return Response.error("Current round is not a trading round");
+    }
     //check if player has enough money to send
     if (state.players.find((player) => player.id === userId)!.money < request.amount) {
       return Response.error("Player does not have enough money");
@@ -336,19 +355,19 @@ export class Impl implements Methods<InternalState> {
     if (state.currentRoundGameModule !== 'prize-draw') {
       return Response.error('Current round is not a prize draw');
     }
-    let prizeDrawPlayer;
+    let prizeDrawPlayer: PrizeDrawPlayer | undefined;
     try {
       prizeDrawPlayer = state.prizeDrawGame?.getPrizeDrawPlayer(userId);
     } catch (e: any) {
       return Response.error(e?.message || 'Could not get prize draw player');
     }
+    
     if (prizeDrawPlayer === undefined) {
       return Response.error('Player is not in the current prize draw game');
     }
-    try {
-      state.prizeDrawGame?.enterTicketsAmount(prizeDrawPlayer, request.tickets);
-    } catch (e: any) {
-      return Response.error(e?.message || 'Could not enter tickets amount');
+    const enterTickets = state.prizeDrawGame?.enterTicketsAmount(prizeDrawPlayer, request.tickets);
+    if(typeof enterTickets === 'string') {
+      return Response.error(enterTickets);
     }
     return Response.ok();
   }
@@ -367,10 +386,10 @@ export class Impl implements Methods<InternalState> {
     if (prizeDrawPlayer === undefined) {
       return Response.error('Player is not in the current prize draw game');
     }
-    try {
-      state.prizeDrawGame?.lockTickets(prizeDrawPlayer);
-    } catch (e: any) {
-      return Response.error(e?.message || 'Could not lock tickets');
+    
+    const lockTickets = state.prizeDrawGame?.lockTickets(prizeDrawPlayer);
+    if(typeof lockTickets === 'string') {
+      return Response.error(lockTickets);
     }
     //if all players have locked their tickets, send an event that all players have locked their tickets
     if (state.prizeDrawGame?.players.every((player) => player.lockTickets)) {
@@ -382,22 +401,21 @@ export class Impl implements Methods<InternalState> {
       } catch (e: any) {
         return Response.error(e?.message || 'Could not determine winner');
       }
-      if (winner === undefined) {
-        return Response.error('Could not determine winner');
+      if (winner != undefined) {
+        //delegate winnings
+        try {
+          this.transferMoneyFromBankToPlayer(state, winner.id, winner.winningsPerRound[state.prizeDrawGame?.round || 0], ctx);
+        } catch (e: any) {
+          return Response.error(e?.message || 'Could not delegate winnings');
+        }
+        try {
+          this.transferMedallionsToPlayer(state, winner.id, state.prizeDrawGame?.medallionsPerRound[state.prizeDrawGame?.round || 0], ctx);
+        } catch (e: any) {
+          return Response.error(e?.message || 'Could not delegate medallions');
+        }
+        //send an event that the winner has been determined
+        ctx.broadcastEvent(HathoraEventTypes.prizeDrawPlayerWinnerDeclared, `Winner has been determined for the round: ${winner.id}`);
       }
-      //delegate winnings
-      try {
-        this.transferMoneyFromBankToPlayer(state, winner.id, winner.winningsPerRound[state.prizeDrawGame?.round || 0], ctx);
-      } catch (e: any) {
-        return Response.error(e?.message || 'Could not delegate winnings');
-      }
-      try {
-        this.transferMedallionsToPlayer(state, winner.id, state.prizeDrawGame?.medallionsPerRound[state.prizeDrawGame?.round || 0], ctx);
-      } catch (e: any) {
-        return Response.error(e?.message || 'Could not delegate medallions');
-      }
-      //send an event that the winner has been determined
-      ctx.broadcastEvent(HathoraEventTypes.prizeDrawPlayerWinnerDeclared, `Winner has been determined for the round: ${winner.id}`);
       //start the next round
       ctx.broadcastEvent(HathoraEventTypes.prizeDrawNextRoundStarting, 'Starting Next Round');
       if ((state.prizeDrawGame.maxRounds - 1) === state.prizeDrawGame.round) {
@@ -429,10 +447,9 @@ export class Impl implements Methods<InternalState> {
     if (lowestUniqueBidPlayer === undefined) {
       return Response.error('Player is not in the lowest-unique-bid game');
     }
-    try {
-      state.lowestUniqueBidGame?.choosePaddle(userId, request.paddleNumber);
-    } catch (e: any) {
-      return Response.error(e?.message || 'Could not choose paddle');
+    const choosePaddle = state.lowestUniqueBidGame?.choosePaddle(userId, request.paddleNumber);
+    if(typeof choosePaddle === 'string') {
+      return Response.error(choosePaddle);
     }
     return Response.ok();
   }
@@ -450,14 +467,10 @@ export class Impl implements Methods<InternalState> {
     if (lowestUniqueBidPlayer === undefined) {
       return Response.error('Player is not in the lowest-unique-bid game');
     }
-    //try {
-      const lockedPaddle = state.lowestUniqueBidGame?.lockPaddle(userId);
-      if (lockedPaddle !== undefined) {
-        return Response.error('Could not lock paddle');
-      }
-    // } catch (e: any) {
-    //   return Response.error(e?.message || 'Could not lock paddle');
-    // }
+    const lockedPaddle = state.lowestUniqueBidGame?.lockPaddle(userId);
+    if (lockedPaddle !== undefined) {
+      return Response.error('Could not lock paddle');
+    }
     //if all players have locked, determine the winner
     if (state.lowestUniqueBidGame?.players.every((player) => player.lockPaddle)) {
       ctx.broadcastEvent(HathoraEventTypes.lowestUniqueBidPlayersLocked, 'All Players Have Locked In Selections, Determining Winner');
@@ -515,10 +528,9 @@ export class Impl implements Methods<InternalState> {
     if (magicMoneyMachinePlayer === undefined) {
       return Response.error('Player is not in the magic-money-machine game');
     }
-    try {
-      state.magicMoneyMachineGame?.putMoneyInBox(request.amount, magicMoneyMachinePlayer);
-    } catch (e: any) {
-      return Response.error(e?.message || 'Could not put money in box');
+    const putMoneyInBox = state.magicMoneyMachineGame?.putMoneyInBox(request.amount, magicMoneyMachinePlayer);
+    if(typeof putMoneyInBox === 'string') {
+      return Response.error(putMoneyInBox);
     }
     return Response.ok();
   }
@@ -530,10 +542,9 @@ export class Impl implements Methods<InternalState> {
     if (magicMoneyMachinePlayer === undefined) {
       return Response.error('Player is not in the magic-money-machine game');
     }
-    try {
-     state.magicMoneyMachineGame?.removeMoneyFromBox(request.amount, magicMoneyMachinePlayer);
-    } catch (e: any) {
-      return Response.error(e?.message || 'Could not remove money from box');
+    const removeMoneyFromBox = state.magicMoneyMachineGame?.removeMoneyFromBox(request.amount, magicMoneyMachinePlayer);
+    if(typeof removeMoneyFromBox === 'string') {
+      return Response.error(removeMoneyFromBox);
     }
     return Response.ok();
   }
@@ -545,10 +556,10 @@ export class Impl implements Methods<InternalState> {
     if (magicMoneyMachinePlayer === undefined) {
       return Response.error('Player is not in the magic-money-machine game');
     }
-    try {
-     state.magicMoneyMachineGame?.lockMoney(magicMoneyMachinePlayer);
-    } catch (e: any) {
-      return Response.error(e?.message || 'Could not lock money');
+    
+    const lockMoney = state.magicMoneyMachineGame?.lockMoney(magicMoneyMachinePlayer);
+    if(typeof lockMoney === 'string') {
+      return Response.error(lockMoney);
     }
     //if all players have locked, payout the players
     if (state.magicMoneyMachineGame?.players.every((player) => player.lockedMoney)) {
@@ -617,10 +628,9 @@ export class Impl implements Methods<InternalState> {
     if (pickAPrizePlayer === undefined) {
       return Response.error('Player is not in the pick-a-prize game');
     }
-    try {
-      state.pickAPrizeGame?.selectAPrize(request.prizeNumber, pickAPrizePlayer);
-    } catch (e: any) {
-      return Response.error(e?.message || 'Could not select a prize');
+    const selectAPrize = state.pickAPrizeGame?.selectAPrize(request.prizeNumber, pickAPrizePlayer);
+    if(typeof selectAPrize === 'string') {
+      return Response.error(selectAPrize);
     }
     return Response.ok();
   }
@@ -637,10 +647,9 @@ export class Impl implements Methods<InternalState> {
     if (pickAPrizePlayer === undefined) {
       return Response.error('Player is not in the pick-a-prize game');
     }
-    try {
-     state.pickAPrizeGame?.lockPrizeSelection(pickAPrizePlayer);
-    } catch (e: any) {
-      return Response.error(e?.message || 'Could not lock prize selection');
+    const lockPrizeSelection = state.pickAPrizeGame?.lockPrizeSelection(pickAPrizePlayer);
+    if (typeof lockPrizeSelection === 'string') {
+      return Response.error(lockPrizeSelection);
     }
     //if all players have locked, payout the players
     if (state.pickAPrizeGame?.players.every((player) => player.lockPrizeSelection)) {
@@ -675,6 +684,23 @@ export class Impl implements Methods<InternalState> {
           return Response.error(e?.message || 'Could not advance round');
         }
       }
+    }
+    return Response.ok();
+  }
+
+  /********
+   * Trading
+   */
+  lockTrading(state: InternalState, userId: string, ctx: Context, request: ILockTradingRequest): Response {
+    if (state.currentRoundGameModule !== 'trading') {
+      return Response.error('Current round is not pick-a-prize');
+    }
+    const player = state?.players?.find((player) => player.id === userId);
+    player?.lockTrading();
+    //check if all players locked trading
+    if (state.players.every((player) => player.lockedTrade)) {
+      ctx.broadcastEvent(HathoraEventTypes.tradingAllPlayersLocked, 'All Players Are Finished Trading, Next Game Starting');
+      this.selectARandomGameModule(state, ctx);
     }
     return Response.ok();
   }

@@ -12,16 +12,21 @@ types:
     - LOWEST_UNIQUE_BID
     - MAGIC_MONEY_MACHINE
     - PICK_A_PRIZE
+    - TRADING
   PrizeType:
     - MONEY
     - MEDALLION
-  PlayerInfo:
+  PlayerSelf:
     id: UserId
     money: int
     medallions: int
     status: PlayerStatus
+    lockedTrade: boolean
+  PlayerInfo:
+    id: UserId
+    lockedTrade: boolean
   PlayerState:
-    self: PlayerInfo?
+    self: PlayerSelf?
     players: PlayerInfo[]
     activePlayer: UserId?
     roundStatus: RoundStatus
@@ -31,6 +36,8 @@ types:
     pickAPrize: PickAPrize?
     magicMoneyMachine: MagicMoneyMachine?
     currentGame: RoundGameModule?
+  Trading: 
+    lockedTrade: boolean
   PrizeDraw:
     players: PrizeDrawPlayers[]
     round: int
@@ -106,6 +113,8 @@ events:
   gameEnded: string
   moneyTransfer: string
   medallionTransfer: string
+  startTradingRound: string
+  tradingAllPlayersLocked: string
 methods:
   joinGame:
   startGame:
@@ -131,6 +140,8 @@ methods:
   selectAPrize:
     prizeNumber: int
   lockPrizeSelection:
+  #trading
+  lockTrading:
 auth:
   anonymous: {}
 

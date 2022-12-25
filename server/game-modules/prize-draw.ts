@@ -1,6 +1,8 @@
+import { Response } from "../../api/base";
+import { ServerError } from "../impl";
 import { InternalPlayerInfo } from "../models/player";
 
-class PrizeDrawPlayer extends InternalPlayerInfo {
+export class PrizeDrawPlayer extends InternalPlayerInfo {
     public tickets: number | undefined;
     public lockTickets = false;
     public winningsPerRound: number[] = [];
@@ -71,27 +73,27 @@ export class InternalPrizeDraw {
         });
     }
 
-    enterTicketsAmount(player: PrizeDrawPlayer, ticketAmount: number): void {
+    enterTicketsAmount(player: PrizeDrawPlayer, ticketAmount: number): void | ServerError {
         if (player.lockTickets) {
-            throw new Error("Player has already entered tickets");
+            return "Player has already entered tickets";
         }
         //ensure tickets is a number
         if(isNaN(ticketAmount)) {
-            throw new Error("Ticket amount must be a number");
+            return "Ticket amount must be a number";
         }
         if (ticketAmount < 0) {
-            throw new Error("Ticket amount must be positive");
+            return "Ticket amount must be positive";
         }
         if (ticketAmount < this.minTicketNumber) {
-            throw new Error(`Ticket amount must be greater than ${this.minTicketNumber}`);
+            return `Ticket amount must be greater than ${this.minTicketNumber}`;
         }
         if (ticketAmount > this.maxTicketNumber) {
-            throw new Error(`Ticket amount must be less than ${this.maxTicketNumber}`);
+            return `Ticket amount must be less than ${this.maxTicketNumber}`;
         }
         player.tickets = ticketAmount;
     }
 
-    public determineWinner(): PrizeDrawPlayer {
+    public determineWinner(): PrizeDrawPlayer | undefined {
         //determine if all players numbers are locked
         if (this.players.some((player) => !player.lockTickets)) {
             throw new Error("Not all players have locked their numbers");
@@ -103,25 +105,34 @@ export class InternalPrizeDraw {
             }
             return acc + player.tickets;
         }, 0);
-        let winnings = this.potsPerRound[this.round] / totalTicketsInDraw;
-        //round winnings down to nearest integer
-        winnings = Math.floor(winnings);
-        winner.winningsPerRound.push(winnings);
-        //every other player gets zero
-        this.players.forEach((player) => {
-            if (player.id !== winner.id) {
+        if(totalTicketsInDraw > 0) {
+            let winnings = this.potsPerRound[this.round] / totalTicketsInDraw;
+            //round winnings down to nearest integer
+            winnings = Math.floor(winnings);
+            winner.winningsPerRound.push(winnings);
+            //every other player gets zero
+            this.players.forEach((player) => {
+                if (player.id !== winner.id) {
+                    player.winningsPerRound.push(0);
+                }
+            });
+            //award the winner the medallions for the current round
+            winner.medallionsPerRound.push(this.medallionsPerRound[this.round]);
+            //every other player gets zero
+            this.players.forEach((player) => {
+                if (player.id !== winner.id) {
+                    player.medallionsPerRound.push(0);
+                }
+            });
+            return winner;
+        } else {
+            //if no tickets were entered, no one wins
+            this.players.forEach((player) => {
                 player.winningsPerRound.push(0);
-            }
-        });
-        //award the winner the medallions for the current round
-        winner.medallionsPerRound.push(this.medallionsPerRound[this.round]);
-        //every other player gets zero
-        this.players.forEach((player) => {
-            if (player.id !== winner.id) {
                 player.medallionsPerRound.push(0);
-            }
-        });
-        return winner;
+            });
+            return undefined;
+        }
     }
 
     private conductPrizeDraw(): PrizeDrawPlayer {
@@ -139,9 +150,9 @@ export class InternalPrizeDraw {
         return players.map((player) => new PrizeDrawPlayer(player.id, player.money, player.medallions));
     }
 
-    public lockTickets(player: PrizeDrawPlayer): void {
+    public lockTickets(player: PrizeDrawPlayer): void | ServerError{
         if (player.tickets === undefined) {
-            throw new Error("Player has not entered tickets");
+            return "Player has not entered tickets";
         }
         player.lockTickets = true;
     }

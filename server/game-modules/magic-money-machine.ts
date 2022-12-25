@@ -1,3 +1,4 @@
+import { ServerError } from "../impl";
 import { InternalPlayerInfo } from "../models/player";
 
 export class MagicMoneyMachinePlayer extends InternalPlayerInfo {
@@ -57,30 +58,30 @@ export class InternalMagicMoneyMachine {
         return this.interestPerRound.length;
     }
 
-    putMoneyInBox(amount: number, player: MagicMoneyMachinePlayer): void {
+    putMoneyInBox(amount: number, player: MagicMoneyMachinePlayer): void | ServerError {
         if (player.lockedMoney) {
-            throw new Error("You have already locked your money");
+            return "You have already locked your money";
         }
         if (amount > player.moneyInHand) {
-            throw new Error("You do not have that much money");
+            return "You do not have that much money";
         }
         player.moneyInHand -= amount;
         player.moneyInBox += amount;
     }
 
-    removeMoneyFromBox(amount: number, player: MagicMoneyMachinePlayer): void {
+    removeMoneyFromBox(amount: number, player: MagicMoneyMachinePlayer): void | ServerError {
         if (player.lockedMoney) {
-            throw new Error("You have already locked your money");
+            return "You have already locked your money";
         }
         if (amount > player.moneyInBox) {
-            throw new Error("You do not have that much money in your box");
+            return "You do not have that much money in your box";
         }
         player.moneyInHand += amount;
         player.moneyInBox -= amount;
     }
-    lockMoney(player: MagicMoneyMachinePlayer): void {
+    lockMoney(player: MagicMoneyMachinePlayer): void | ServerError {
         if (player.lockedMoney) {
-            throw new Error("You have already locked your money");
+            return "You have already locked your money";
         }
         player.lockedMoney = true;
     }

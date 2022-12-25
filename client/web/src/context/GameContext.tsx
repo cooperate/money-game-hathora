@@ -33,6 +33,8 @@ interface GameContext {
   putMoneyInBox: (money: number) => Promise<void>;
   removeMoneyFromBox: (money: number) => Promise<void>;
   lockMoney: () => Promise<void>;
+  lockTrading: () => Promise<void>;
+  transferMoney: (amount: number, playerIdToSendTo: string) => Promise<void>;
 }
 
 export const getGameNameById = (roundGameModule: RoundGameModule | undefined): string => {
@@ -192,6 +194,21 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
     connection?.disconnect();
   };
 
+  const lockTrading = useCallback(async () => {
+    if (connection) {
+      await handleResponse(connection.lockTrading({}));
+    }
+  }, [connection]);
+
+  const transferMoney = useCallback(
+    async (amount: number, playerIdToSendTo: string) => {
+      if (connection) {
+        await handleResponse(connection.transferMoney({ amount, playerIdToSendTo }));
+      }
+    },
+    [connection]
+  );
+
   const lockPrize = useCallback(async () => {
     if (connection) {
       await handleResponse(connection.lockPrizeSelection({}));
@@ -314,6 +331,8 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
         putMoneyInBox,
         removeMoneyFromBox,
         lockMoney,
+        lockTrading,
+        transferMoney
       }}
     >
       {children}
