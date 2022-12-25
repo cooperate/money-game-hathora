@@ -103,8 +103,8 @@ const SelectionArea = ({ prizes, lockPrize, selectAPrize, chosenPrize, lockPrize
     return (
         <div className="flex flex-col justify-center items-center">
             <div className="flex flex-wrap gap-6 justify-center m-10">
-                {prizes && prizes.map((prize, index) => (
-                    <PrizeSelection animate={animateNow?.[index] || false} className={index === chosenPrize ? selectedPrizeClass : unselectedPrizeClass} onClick={() => selectAPrizeClick(index)}>
+                {prizes && prizes.map((prize: Prize, index: number) => (
+                    <PrizeSelection key={index} animate={animateNow?.[index] || false} className={index === chosenPrize ? selectedPrizeClass : unselectedPrizeClass} onClick={() => selectAPrizeClick(index)}>
                         {prize.prizeType == PrizeType.MONEY ?
                             <span className="flex flex-row inline-block text-xl items-center align-center">{moneySvg()} {prize.amount}</span> :
                             //iterate x times over amount

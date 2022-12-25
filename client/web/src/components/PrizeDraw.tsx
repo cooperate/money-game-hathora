@@ -46,7 +46,7 @@ const PlayerStatus = ({ winningsPerRound, medallionsPerRound }: { winningsPerRou
 )
 
 const SelectionArea = ({ prizeDraw }: { prizeDraw: PrizeDraw | undefined }) => {
-    const [tickets, setTickets] = useState<number | undefined>(undefined);
+    const [tickets, setTickets] = useState<number>(0);
     const { user, lockTickets, enterTickets } = useHathoraContext();
     const currentRoundPotStyle = 'block max-w-sm p-6 border bg-white border-gray-200 rounded-lg shadow-md hover:bg-green-100 dark:bg-white-800 dark:border-gray-700 dark:hover:bg-green-500';
     function componentEnterTickets(tickets: number) {
@@ -57,7 +57,7 @@ const SelectionArea = ({ prizeDraw }: { prizeDraw: PrizeDraw | undefined }) => {
     }
     useEffect(() => {
         if(prizeDraw?.ticketsLocked) {
-            setTickets(undefined);
+            setTickets(0);
         }
     }, [prizeDraw?.ticketsLocked])
     return (

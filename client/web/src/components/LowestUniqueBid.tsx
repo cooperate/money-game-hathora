@@ -35,15 +35,16 @@ const PlayerStatus = ({ multipliersPerRound, medallionsPerRound }: { multipliers
 }
 
 const SelectionArea = ({lowestUniqueBidder, getUserName} : {lowestUniqueBidder: LowestUniqueBidder | undefined, getUserName: any}) => {
+    const { choosePaddle, lockPaddle } = useHathoraContext();
     return (
         <div className="flex flex-col gap-4 m-5"> 
             <div className="flex flex-row justify-center items-center gap-4">
-                {(lowestUniqueBidder?.revealedPaddles[lowestUniqueBidder?.round]?.length || 0) > 0 ?
+                {(lowestUniqueBidder?.revealedPaddles[lowestUniqueBidder?.round]?.length || 0) === 0 ?
                     <>
                     <span className={'text-2xl font-bold'}>Choose a Paddle</span>
                     {
                         lowestUniqueBidder?.paddlesToChooseFrom.map((paddle: number) => (
-                            <div key={paddle} className="rounded-lg justify-center items-center border bg-white border-gray-200 p-5 hover:-translate-y-1 hover:scale-110 hover:bg-indigo-200">
+                            <div key={paddle} onClick={() => choosePaddle(paddle)} className={`rounded-lg justify-center items-center border ${(paddle == lowestUniqueBidder?.chosenPaddle) ? 'bg-green-500' : 'bg-white'} border-gray-200 p-5 hover:-translate-y-1 hover:scale-110 hover:bg-indigo-200`}>
                                 {paddle}
                             </div>
                         ))
@@ -68,7 +69,7 @@ const SelectionArea = ({lowestUniqueBidder, getUserName} : {lowestUniqueBidder: 
                     </>
                 }
             </div>
-            <LockButton callbackToLock={() => {}} isLocked={lowestUniqueBidder?.lockedPaddle || false} lockText={"Paddle is locked."} unlockText={"Paddle is not locked."} />
+            <LockButton callbackToLock={() => lockPaddle()} isLocked={lowestUniqueBidder?.lockedPaddle || false} lockText={"Paddle is locked."} unlockText={"Paddle is not locked."} />
         </div>
     )
 }

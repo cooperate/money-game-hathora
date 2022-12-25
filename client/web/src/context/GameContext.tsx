@@ -26,6 +26,8 @@ interface GameContext {
   selectAPrize: (prize: number) => Promise<void>;
   lockTickets: () => Promise<void>;
   enterTickets: (tickets: number) => Promise<void>;
+  lockPaddle: () => Promise<void>;
+  choosePaddle: (paddle: number) => Promise<void>;
 }
 
 export const getGameNameById = (roundGameModule: RoundGameModule | undefined): string => {
@@ -206,6 +208,19 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
     }
   }, [connection]);
 
+  //Lowest Unique Bid
+  const choosePaddle = useCallback(async (paddleNumber: number) => {
+    if (connection) {
+      await handleResponse(connection.choosePaddle({ paddleNumber }));
+    }
+  }, [connection]);
+
+  const lockPaddle = useCallback(async () => {
+    if (connection) {
+      await handleResponse(connection.lockPaddle({}));
+    }
+  }, [connection]);
+
   useEffect(() => {
     if (connectionError) {
       toast.error(connectionError?.message);
@@ -267,6 +282,8 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
         selectAPrize,
         lockTickets,
         enterTickets,
+        lockPaddle,
+        choosePaddle,
       }}
     >
       {children}

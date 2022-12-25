@@ -114,8 +114,8 @@ export class InternalPickAPrize {
                 }
             }
         });
-        //if the bonus prize is still available, randomly increase two prizes of type money by 50%
-        if (this.bonusPrizePerRound[this.round] && this.round <= this.prizesPerRound.length) {
+        //if the bonus prize is still available, randomly increase two prizes of type money by 50%, do not trigger on the last round
+        if (this.bonusPrizePerRound[this.round] && this.round < (this.prizesPerRound.length - 1)) {
             const moneyPrizes = this.prizesPerRound[this.round + 1].filter((prize) => {
                 return prize.prizeType === "money";
             });
