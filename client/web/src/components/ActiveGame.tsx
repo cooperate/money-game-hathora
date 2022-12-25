@@ -4,13 +4,12 @@ import { useWindowSize } from "rooks";
 import classNames from "classnames";
 
 import { useHathoraContext } from "../context/GameContext";
-import { CardComponent } from "./CardComponent";
-import { rankConversion } from "../constants/rankConversion";
 import { PickAPrize, PlayerStatus, RoundGameModule, RoundStatus } from "../../../../api/types";
 import TopBar from "./TopBar";
 import PickAPrizeComponent from "./PickAPrize";
 import PrizeDraw from "./PrizeDraw";
 import LowestUniqueBid from "./LowestUniqueBid";
+import MagicMoneyMachine from "./MagicMoneyMachine";
 
 const PlayerBoard = styled.div`
   height: 100%;
@@ -55,7 +54,7 @@ export default function ActiveGame() {
         );
       case RoundGameModule.MAGIC_MONEY_MACHINE:
         return (
-          <>Magic Money Machine</>
+          <MagicMoneyMachine />
         );
       case RoundGameModule.PICK_A_PRIZE:
         return (

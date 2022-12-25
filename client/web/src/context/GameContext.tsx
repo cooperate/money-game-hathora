@@ -3,8 +3,10 @@ import { toast, ToastContainer } from "react-toastify";
 import { useSessionstorageState } from "rooks";
 import { HathoraClient, HathoraConnection } from "../../../.hathora/client";
 import { ConnectionFailure } from "../../../.hathora/failures";
-import { IInitializeRequest, PlayerState, RoundGameModule, RoundStatus } from "../../../../api/types";
+import { HathoraEventTypes, IInitializeRequest, PlayerState, RoundGameModule, RoundStatus } from "../../../../api/types";
 import { lookupUser, Response, UserData } from "../../../../api/base";
+
+export type HathoraEvent = {type: HathoraEventTypes.newRound; val: string} | {type: HathoraEventTypes.moneyTransfer; val: string} | {type: HathoraEventTypes.medallionTransfer; val: string}
 
 interface GameContext {
   token?: string;
@@ -28,6 +30,9 @@ interface GameContext {
   enterTickets: (tickets: number) => Promise<void>;
   lockPaddle: () => Promise<void>;
   choosePaddle: (paddle: number) => Promise<void>;
+  putMoneyInBox: (money: number) => Promise<void>;
+  removeMoneyFromBox: (money: number) => Promise<void>;
+  lockMoney: () => Promise<void>;
 }
 
 export const getGameNameById = (roundGameModule: RoundGameModule | undefined): string => {
@@ -221,6 +226,24 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
     }
   }, [connection]);
 
+  const putMoneyInBox = useCallback(async (amount: number) => {
+    if (connection) {
+      await handleResponse(connection.putMoneyInBox({ amount }));
+    }
+  }, [connection]);
+
+  const removeMoneyFromBox = useCallback(async (amount: number) => {
+    if (connection) {
+      await handleResponse(connection.removeMoneyFromBox({ amount }));
+    }
+  }, [connection]);
+
+  const lockMoney = useCallback(async () => {
+    if (connection) {
+      await handleResponse(connection.lockMoney({}));
+    }
+  }, [connection]);
+
   useEffect(() => {
     if (connectionError) {
       toast.error(connectionError?.message);
@@ -284,6 +307,9 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
         enterTickets,
         lockPaddle,
         choosePaddle,
+        putMoneyInBox,
+        removeMoneyFromBox,
+        lockMoney,
       }}
     >
       {children}

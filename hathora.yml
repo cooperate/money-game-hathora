@@ -105,6 +105,8 @@ events:
   magicMoneyMachinePlayersLocked: string
   pickAPrizePlayersLocked: string
   gameEnded: string
+  moneyTransfer: string
+  medallionTransfer: string
 methods:
   joinGame:
   startGame:

@@ -295,21 +295,25 @@ export class Impl implements Methods<InternalState> {
   /*********
    * MONEY TRANSFER
    */
-  transferMoneyFromBankToPlayer(state: InternalState, userId: UserId, amount: number): void {
+  transferMoneyFromBankToPlayer(state: InternalState, userId: UserId, amount: number, ctx: Context): void {
     //check if bank has enough money
     if (state.bank < amount) {
       throw new Error("Bank does not have enough money");
     }
     state.players.find((player) => player.id === userId)!.money += amount;
     state.bank -= amount;
+
+    ctx.sendEvent(HathoraEventTypes.moneyTransfer, `You were just transfered $${amount}!`, userId);
   }
-  transferMedallionsToPlayer(state: InternalState, userId: UserId, amount: number): void {
+  transferMedallionsToPlayer(state: InternalState, userId: UserId, amount: number, ctx: Context): void {
     //check if there are enough medallions left
     if (state.medallionsAvailable < amount) {
       throw new Error("Not enough medallions left");
     }
     state.players.find((player) => player.id === userId)!.medallions += amount;
     state.medallionsAvailable -= amount;
+
+    ctx.sendEvent(HathoraEventTypes.medallionTransfer, `You were just transfered ${amount} medallion!`, userId);
   }
 
   transferMoney(state: InternalState, userId: string, ctx: Context, request: ITransferMoneyRequest): Response {
@@ -381,8 +385,8 @@ export class Impl implements Methods<InternalState> {
       }
       //delegate winnings
       try {
-        this.transferMoneyFromBankToPlayer(state, winner.id, winner.winningsPerRound[state.prizeDrawGame?.round || 0]);
-        this.transferMedallionsToPlayer(state, winner.id, state.prizeDrawGame?.medallionsPerRound[state.prizeDrawGame?.round || 0]);
+        this.transferMoneyFromBankToPlayer(state, winner.id, winner.winningsPerRound[state.prizeDrawGame?.round || 0], ctx);
+        this.transferMedallionsToPlayer(state, winner.id, state.prizeDrawGame?.medallionsPerRound[state.prizeDrawGame?.round || 0], ctx);
       } catch (e: any) {
         return Response.error(e?.message || 'Could not delegate winnings');
       }
