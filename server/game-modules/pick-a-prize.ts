@@ -105,13 +105,10 @@ export class InternalPickAPrize {
                         player.winningsPerRound.push(0);
                     }
                 } else {
-                    //the bonus prize becomes nullified
-                    this.bonusPrizePerRound[this.round] = false;
-                }
-                //if a player didn't receive any prize, both their winningsPerRound and medallionsPerRound are set to 0
-                if ((player.winningsPerRound.length - 1) === this.round) {
                     player.winningsPerRound.push(0);
                     player.medallionsPerRound.push(0);
+                    //the bonus prize becomes nullified
+                    this.bonusPrizePerRound[this.round] = false;
                 }
             }
         });

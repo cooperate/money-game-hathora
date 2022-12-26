@@ -1,5 +1,5 @@
 import styled, { css, keyframes } from "styled-components";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useWindowSize } from "rooks";
 import classNames from "classnames";
 import { LowestUniqueBidder, LowestUniqueBidderPlayers, RevealedPaddle } from "../../../../api/types";
@@ -16,56 +16,90 @@ const PlayerStatus = ({ multipliersPerRound, medallionsPerRound }: { multipliers
     return (
         <div className="flex flex-row justify-center gap-4">
             <div className="flex flex-row justify-center player-statusblock max-w-sm p-6 border bg-white border-gray-200 rounded-lg shadow-md hover:bg-gray-100 dark:bg-white-800 dark:border-gray-700 dark:hover:bg-gray-700 gap-4">
-                    {multipliersPerRound.map((multiplier: number, index: number) => (
-                        <div key={index} className="flex flex-col items-center">
-                            <div className="flex flex-row">
-                                <div className="flex flex-row items-center text-sm font-bold">{moneySvg()} X</div>
-                                <div className="text-2xl font-bold">{multiplier}</div>
-                            </div>
-                            <div className="flex flex-row items-center">
-                                <div className="text-sm font-bold">{medallionSvg()}</div>
-                                <div className="text-sm font-bold">{medallionsPerRound[index]}</div>
-                            </div>
+                {multipliersPerRound.map((multiplier: number, index: number) => (
+                    <div key={index} className="flex flex-col items-center">
+                        <div className="flex flex-row">
+                            <div className="flex flex-row items-center text-sm font-bold">{moneySvg()} X</div>
+                            <div className="text-2xl font-bold">{multiplier}</div>
                         </div>
-                    ))}
+                        <div className="flex flex-row items-center">
+                            <div className="text-sm font-bold">{medallionSvg()}</div>
+                            <div className="text-sm font-bold">{medallionsPerRound[index]}</div>
+                        </div>
+                    </div>
+                ))}
             </div>
             <GameInfoModal title={'Lowest Unique Bid Rules'} text={'Each player selects one paddle to make a bid.  The winner is the player who selects the lowest value paddle not chosen by anyone else.  The winner receives the paddle value multiplied by the current rounds pot.'} />
         </div>
     )
 }
 
-const SelectionArea = ({lowestUniqueBidder, getUserName} : {lowestUniqueBidder: LowestUniqueBidder | undefined, getUserName: any}) => {
+const SelectionArea = ({ lowestUniqueBidder, getUserName }: { lowestUniqueBidder: LowestUniqueBidder | undefined, getUserName: any }) => {
     const { choosePaddle, lockPaddle } = useHathoraContext();
+    const [keepRevealedPaddlesDisplayed, setKeepRevealedPaddlesDisplayed] = useState(false);
+
+    useEffect(() => {
+        //if the revealed paddles changes to be greater than 0 in the current round, then we need to reveal the paddle
+        if (lowestUniqueBidder?.revealedPaddles[lowestUniqueBidder?.round]?.length || 0 > 0) {
+            setKeepRevealedPaddlesDisplayed(true);
+            //after 3 seconds of the revealed paddles being displayed, setKeepRevealedPaddlesDisplayed to false
+            setTimeout(() => {
+                setKeepRevealedPaddlesDisplayed(false);
+            }, 3000);
+        }
+    }, lowestUniqueBidder?.revealedPaddles[lowestUniqueBidder?.round])
     return (
-        <div className="flex flex-col gap-4 m-5"> 
+        <div className="flex flex-col gap-4 m-5">
             <div className="flex flex-row justify-center items-center gap-4">
-                {(lowestUniqueBidder?.revealedPaddles[lowestUniqueBidder?.round]?.length || 0) === 0 ?
-                    <>
-                    <span className={'text-2xl font-bold'}>Choose a Paddle</span>
-                    {
-                        lowestUniqueBidder?.paddlesToChooseFrom.map((paddle: number) => (
-                            <div key={paddle} onClick={() => choosePaddle(paddle)} className={`rounded-lg justify-center items-center border ${(paddle == lowestUniqueBidder?.chosenPaddle) ? 'bg-green-500' : 'bg-white'} border-gray-200 p-5 hover:-translate-y-1 hover:scale-110 hover:bg-indigo-200`}>
-                                {paddle}
+                {(lowestUniqueBidder?.revealedPaddles[lowestUniqueBidder?.round]?.length || 0) === 0 && !keepRevealedPaddlesDisplayed ?
+                    <div className="flex flex-col">
+                        <div className="flex flex-col">
+                            <span className={'text-2xl font-bold'}>Choose a Paddle</span>
+                            <div className="flex flex-row justify-center items-center gap-2">
+                                {
+                                    lowestUniqueBidder?.paddlesToChooseFrom.map((paddle: number) => (
+                                        <div key={paddle} onClick={() => choosePaddle(paddle)} className={`rounded-lg justify-center items-center border ${(paddle == lowestUniqueBidder?.chosenPaddle) ? 'bg-green-500' : 'bg-white'} border-gray-200 p-5 hover:-translate-y-1 hover:scale-110 hover:bg-indigo-200`}>
+                                            {paddle}
+                                        </div>
+                                    ))
+                                }
                             </div>
-                        ))
-                    } 
-                    </>
-                    :
-                    <>
-                    <span className={'text-2xl font-bold'}>Paddles Are Revealed!</span>
-                    {
-                        lowestUniqueBidder?.revealedPaddles[lowestUniqueBidder?.round]?.map((revealedPaddle: RevealedPaddle, index: number) => (
-                            <div key={index} className="rounded-lg justify-center items-center border bg-white border-gray-200 p-5 hover:-translate-y-1 hover:scale-110 hover:bg-indigo-200">
-                                <div className="flex flex-col justify-center items-center gap-2">
-                                    <div className="text-2xl font-bold">Player</div>
-                                    <div className="text-2xl font-bold">{getUserName(revealedPaddle.playerId)}</div>
-                                    <div className="rounded-lg justify-center items-center border bg-white border-gray-200 p-5 hover:-translate-y-1 hover:scale-110 hover:bg-indigo-200">
-                                        {revealedPaddle.paddle}
-                                    </div>
+                        </div>
+                        {(lowestUniqueBidder?.round || 0) > 0 &&
+                            <div className="flex flex-col">
+                                <span className={'text-2xl font-bold'}>Paddles Revealed In Round {(lowestUniqueBidder?.round || 0) - 1} </span>
+                                <div className="flex flex-row justify-center items-center gap-2">
+                                    {lowestUniqueBidder?.revealedPaddles[lowestUniqueBidder?.round - 1]?.map((revealedPaddle: RevealedPaddle, index: number) => (
+                                        <div key={index} className="rounded-lg justify-center items-center border bg-white border-gray-200 p-5 hover:-translate-y-1">
+                                            <div className="flex flex-col justify-center items-center gap-2">
+                                                <div className="text-2xl font-bold">Player</div>
+                                                <div className="text-2xl font-bold">{nameAbbreviation(getUserName(revealedPaddle.playerId))}</div>
+                                                <div className="rounded-lg justify-center items-center border bg-white border-gray-200 p-5 hover:-translate-y-1">
+                                                    {revealedPaddle.paddle}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        ))
-                    }
+                        }
+                    </div>
+                    :
+                    <>
+                        <span className={'text-2xl font-bold'}>Paddles Are Revealed!</span>
+                        {
+                            lowestUniqueBidder?.revealedPaddles[lowestUniqueBidder?.round]?.map((revealedPaddle: RevealedPaddle, index: number) => (
+                                <div key={index} className="rounded-lg justify-center items-center border bg-white border-gray-200 p-5">
+                                    <div className="flex flex-col justify-center items-center gap-2">
+                                        <div className="text-2xl font-bold">Player</div>
+                                        <div className="text-2xl font-bold">{getUserName(revealedPaddle.playerId)}</div>
+                                        <div className="rounded-lg justify-center items-center border bg-white border-gray-200 p-5">
+                                            {revealedPaddle.paddle}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        }
                     </>
                 }
             </div>
@@ -75,7 +109,7 @@ const SelectionArea = ({lowestUniqueBidder, getUserName} : {lowestUniqueBidder: 
 }
 
 const Winnings = ({ winningsPerRound, medallionsPerRound }: { winningsPerRound: number[] | undefined, medallionsPerRound: number[] | undefined }) => (
-    <div className='block max-w-sm p-6 border bg-white border-gray-200 rounded-lg shadow-md hover:bg-gray-100 dark:bg-white-800 dark:border-gray-700 dark:hover:bg-gray-700'>
+    <div className='flex justify-center flex-col block max-w-sm p-6 border bg-white border-gray-200 rounded-lg shadow-md hover:bg-gray-100 dark:bg-white-800 dark:border-gray-700 dark:hover:bg-gray-700'>
         <div className="flex flex-col items-center">
             <div className="text-lg font-bold">Winnings</div>
             <div className="flex flex-row gap-2">
@@ -130,7 +164,7 @@ export default function LowestUniqueBidComponent() {
     }
 
     return (
-        <div className="flex flex-col">
+        <div className="flex flex-col justify-center items-center">
             <Winnings winningsPerRound={getSelfPlayerStatus()?.winningsPerRound} medallionsPerRound={getSelfPlayerStatus()?.medallionsPerRound} />
             <PlayerStatus multipliersPerRound={playerState?.lowestUniqueBidder?.multipliersPerRound || []} medallionsPerRound={playerState?.lowestUniqueBidder?.medallionsPerRound || []} />
             <SelectionArea lowestUniqueBidder={playerState?.lowestUniqueBidder} getUserName={getUserName} />

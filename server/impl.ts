@@ -55,7 +55,7 @@ type InternalState = {
 };
 
 type GameModule = 'prize-draw' | 'lowest-unique-bid' | 'magic-money-machine' | 'pick-a-prize' | 'trading';
-
+const DEFAULT_ROUNDS = 3;
 export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
     return {
@@ -120,6 +120,10 @@ export class Impl implements Methods<InternalState> {
   }
 
   startTradingRound(state: InternalState, ctx: Context) {
+    //iterate through players and unlock trading
+    state.players.forEach((player: PlayerInfo) => {
+      player.lockedTrade = false;
+    });
     state.currentRoundGameModule = 'trading';
     
     ctx.broadcastEvent(HathoraEventTypes.startTradingRound, `Trading Round Started`);
@@ -179,6 +183,7 @@ export class Impl implements Methods<InternalState> {
       pickAPrize: this.mapPickAPrize(state.pickAPrizeGame, userId),
       magicMoneyMachine: this.mapMagicMoneyMachine(state.magicMoneyMachineGame, userId),
       currentGame: this.mapToRoundGameModule(state.currentRoundGameModule),
+      turnNumber: state.turnNumber,
     };
   }
   /*******
@@ -715,6 +720,42 @@ function createPlayer(id: UserId): InternalPlayerInfo {
   return new InternalPlayerInfo(id);
 }
 
+function generatePrizes(playerCount:number, moneyForPrizes: number, totalMedallions: number) {
+  const prizes: Prize[][] = [];
+  //given the playercount, each round should have an equivalent number of prizes as there are players
+  const prizeCountPerRound = playerCount;
+  //round 1 will have 15% of the moneyForPrizes, round 2 will have 30%, round 3 will have 45%
+  const moneyForPrizesPerRound = [moneyForPrizes * 0.15, moneyForPrizes * 0.3, moneyForPrizes * 0.45];
+  //given the playerCount, prizes should have weighted tiers
+  //each round will have no more than a single prize of medallions, which is subtracted from the total medallions
+  //iterate through rounds
+  for (let i = 0; i < DEFAULT_ROUNDS; i++) {
+    let prizes: InternalPrize[] = [];
+    //iterate through prizeCountPerRound
+    for (let j = 0; j < prizeCountPerRound; j++) {
+      //if this is the last round, make a 50/50 decision to add medallions or money
+      if (i === DEFAULT_ROUNDS - 1) {
+        if (Math.random() > 0.5) {
+          const medallionCount = Math.floor(Math.random() * totalMedallions);
+          //add medallions
+          const prize: InternalPrize = {
+            prizeType: 'medallions', 
+            amount: medallionCount
+          };
+          prizes.push(prize);
+          totalMedallions -= medallionCount;
+        } else {
+          //add money
+          const money = 
+          totalMoney += money;
+        }
+      } else {
+        //add money
+        const money = moneyDistribution[Math.floor(Math.random() * moneyDistribution.length)];
+        totalMoney += money;
+      }
+    }
+}
 
 const PRIZE_ROUND_0 = [
   {

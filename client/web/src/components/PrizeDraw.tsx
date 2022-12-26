@@ -60,12 +60,14 @@ const SelectionArea = ({ prizeDraw }: { prizeDraw: PrizeDraw | undefined }) => {
             setTickets(0);
         }
     }, [prizeDraw?.ticketsLocked])
+
+    const badgeYellow = 'bg-yellow-100 text-yellow-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-yellow-200 dark:text-yellow-900';
     return (
-        <div className="flex flex-col justify-center">
+        <div className="flex flex-col justify-center m-10">
             <div className="flex flex-row justify-between">
                 {prizeDraw?.potsPerRound.map((pot, index) => (
                     <div key={index} className={`flex flex-col gap-2 justify-center items-center ${(index == prizeDraw?.round && currentRoundPotStyle)}`}>
-                        <div className="text-lg font-bold">Pot {index + 1}</div>
+                        <div className="text-lg font-bold">Pot {index + 1} {prizeDraw.winningsPerRound[index] > 0 && <span className={badgeYellow}>You Won!</span>}</div>
                         <div className="flex flex-row gap-2">
                             <div>{moneySvg()}</div>
                             <div className="text-2xl font-bold">{pot}</div>

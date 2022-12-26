@@ -21,10 +21,15 @@ const SelectionArea = ({ players }: { players: PlayerInfo[] | undefined }) => {
     const cardCss = 'block max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700';
     const headerTextCss = 'mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white';
 
-    const componentEnterAmount = (playerId: string, amount: number, ref: any) => {
-        setMoneyToSend(prevState => [...prevState, { playerId, amount }]);
-        //clear ref input value
-        ref.target.value = "";
+    const componentEnterAmount = (playerId: string, amount: number) => {
+        //setMoneyToSend replace prevId with new amount
+        const prevId = moneyToSend.find((player) => player.playerId === playerId);
+        if (prevId) {
+            const newMoneyToSend = moneyToSend.filter((player) => player.playerId !== playerId);
+            setMoneyToSend([...newMoneyToSend, { playerId, amount }]);
+        } else {
+            setMoneyToSend([...moneyToSend, { playerId, amount }]);
+        }
     }
 
     const transferMoneyComponent = (playerId: string) => {
@@ -33,7 +38,7 @@ const SelectionArea = ({ players }: { players: PlayerInfo[] | undefined }) => {
             transferMoney(playerMoney.amount, playerId);
         }
     }
-    
+
     return (
         <div className="flex flex-col justify-center">
             <div className="flex flex-wrap justify-center gap-1">
@@ -42,17 +47,17 @@ const SelectionArea = ({ players }: { players: PlayerInfo[] | undefined }) => {
                         <div className="flex flex-col items-center">
                             <div className={headerTextCss}>{nameAbbreviation(getUserName(player.id))}</div>
                         </div>
-                        <input
-                            type="number"
-                            onChange={(e) => componentEnterAmount(player.id, parseFloat(e.target.value), e)}
-                            placeholder="Enter Money To Transfer"
-                            className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
-                        />
-                        <button onClick={() => transferMoneyComponent(player.id)} className="p-1 ml-auto bg-transparent border-0 text-black opacity-5 float-right text-3xl leading-none font-semibold outline-none focus:outline-none">
-                            <span className="bg-transparent text-black opacity-5 h-6 w-6 text-2xl block outline-none focus:outline-none">
-                                Send Money
-                            </span>
-                        </button>
+                        <div className="flex flex-row items-center justify-center">
+                            <input
+                                type="number"
+                                onChange={(e) => componentEnterAmount(player.id, parseFloat(e.target.value))}
+                                placeholder="Enter An Amount"
+                                className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
+                            />
+                            <button disabled={moneyToSend.find(playersMoney => playersMoney.playerId == player.id)?.amount ? false : true} onClick={() => transferMoneyComponent(player.id)} className={`block shadow-md ${moneyToSend.find(playersMoney => playersMoney.playerId == player.id)?.amount ? 'bg-green-500 hover:bg-green-900' : 'bg-slate-500'} rounded p-2 font-semibold text-white text-center h-full`}>
+                                    Send Money
+                            </button>
+                        </div>
                         <LockButtonNoInteraction isLocked={player?.lockedTrade} lockText={"Has finished trading."} unlockText={"Still Trading."} />
                     </div>
                 ))}
@@ -64,16 +69,16 @@ const SelectionArea = ({ players }: { players: PlayerInfo[] | undefined }) => {
 const PlayerStatus = ({ money, lockedTrade }: { money: number | undefined, lockedTrade: boolean | undefined }) => {
     const { lockTrading } = useHathoraContext();
     return (
-    <div className="flex flex-col justify-between gap-1 w-95">
-        <div className='grow rounded-lg shadow-md hover:bg-gray-100 dark:bg-white-800 dark:border-gray-700 dark:hover:bg-gray-700 flex flex-col justify-center items-center'>
-            <p className="text-lg font-bold">Money</p>
-            <div className="flex flex-row gap-2 items-center justify-center">
-                <div>{moneySvg()}</div>
-                <div className="text-2xl font-bold">{money || 'unavailable'}</div>
+        <div className="flex flex-col justify-between gap-1 w-95">
+            <div className='grow rounded-lg shadow-md hover:bg-gray-100 dark:bg-white-800 dark:border-gray-700 dark:hover:bg-gray-700 flex flex-col justify-center items-center'>
+                <p className="text-lg font-bold">Money</p>
+                <div className="flex flex-row gap-2 items-center justify-center">
+                    <div>{moneySvg()}</div>
+                    <div className="text-2xl font-bold">{money || 0}</div>
+                </div>
             </div>
-        </div>
-        <LockButton callbackToLock={() => lockTrading()} isLocked={lockedTrade || false} lockText={"Done trading."} unlockText={"Click To Finish Trading."} />
-    </div>)
+            <LockButton callbackToLock={() => lockTrading()} isLocked={lockedTrade || false} lockText={"Done trading."} unlockText={"Click To Finish Trading."} />
+        </div>)
 }
 export default function TransferMoneyComponent() {
     const { playerState, user, getUserName, startRound, endGame, lockPrize, selectAPrize } = useHathoraContext();

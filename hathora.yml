@@ -36,6 +36,7 @@ types:
     pickAPrize: PickAPrize?
     magicMoneyMachine: MagicMoneyMachine?
     currentGame: RoundGameModule?
+    turnNumber: int
   Trading: 
     lockedTrade: boolean
   PrizeDraw:

@@ -195,14 +195,10 @@ const PlayerArea = ({ players, getUserName }: { players: MagicMoneyMachinePlayer
 export default function MagicMoneyMachineComponent() {
     const { playerState, user, getUserName, startRound, endGame, lockPrize, selectAPrize } = useHathoraContext();
 
-    const getSelfPlayerStatus = (): PickAPrizePlayers | undefined => {
-        return playerState?.pickAPrize?.players.find((player) => player.id === user?.id);
-    }
-
     return (
         <div>
 
-            <Winnings winningsPerRound={getSelfPlayerStatus()?.winningsPerRound} />
+            <Winnings winningsPerRound={playerState?.magicMoneyMachine?.winningsPerRound} />
             <PlayerStatus totalInterestPerRound={playerState?.magicMoneyMachine?.totalInterestPerRound || []} totalPayoutPerRound={playerState?.magicMoneyMachine?.totalPayoutPerRound || []} />
             <SelectionArea magicMoneyMachine={playerState?.magicMoneyMachine} />
             <PlayerArea players={playerState?.magicMoneyMachine?.players.filter((player) => player.id != user?.id)} getUserName={getUserName} />
