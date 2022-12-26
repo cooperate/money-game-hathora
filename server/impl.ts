@@ -159,7 +159,7 @@ export class Impl implements Methods<InternalState> {
         state.currentRoundGameModule = 'magic-money-machine';
         break;
       case 'pick-a-prize':
-        state.pickAPrizeGame = new InternalPickAPrize(state.players, [PRIZE_ROUND_0, PRIZE_ROUND_1, PRIZE_ROUND_2]);
+        state.pickAPrizeGame = new InternalPickAPrize(state.players, generatePrizes(state.players.length, 2000, 3));
         state.currentRoundGameModule = 'pick-a-prize';
         break;
       default:
@@ -721,20 +721,45 @@ function createPlayer(id: UserId): InternalPlayerInfo {
 }
 
 function generatePrizes(playerCount:number, moneyForPrizes: number, totalMedallions: number) {
-  const prizes: Prize[][] = [];
+  const prizes: InternalPrize[][] = [];
   //given the playercount, each round should have an equivalent number of prizes as there are players
   const prizeCountPerRound = playerCount;
   //round 1 will have 15% of the moneyForPrizes, round 2 will have 30%, round 3 will have 45%
   const moneyForPrizesPerRound = [moneyForPrizes * 0.15, moneyForPrizes * 0.3, moneyForPrizes * 0.45];
   //given the playerCount, prizes should have weighted tiers
+  const prizeTiersPerRound = (playerCount: number): number[][] => {
+    switch(playerCount) {
+      case 2:
+        return [[0.3, 0.7], [0, 1], [0.1, 0.9]];
+      case 3:
+        return [[0.2, 0.3, 0.5], [0.1, 0.4, 0.5], [0, 0.3, 0.7]];
+      case 4:
+        return [[0.15, 0.25, 0.2, 0.4], [0.1, 0.2, 0.3, 0.4], [0.05, 0.15, 0.3, 0.5]];
+      case 5:
+        return [[0.1, 0.2, 0.2, 0.2, 0.3], [0.05, 0.15, 0.2, 0.3, 0.3], [0.05, 0.1, 0.2, 0.3, 0.35]];
+      case 6:
+        return [[0.1, 0.15, 0.15, 0.2, 0.2, 0.2], [0.05, 0.1, 0.15, 0.2, 0.25, 0.25], [0.05, 0.1, 0.15, 0.2, 0.25, 0.25]];
+      case 7:
+        return [[0.1, 0.1, 0.15, 0.15, 0.15, 0.2, 0.15], [0.05, 0.1, 0.1, 0.15, 0.15, 0.2, 0.2], [0.05, 0.1, 0.1, 0.15, 0.15, 0.2, 0.2]];
+      case 8:
+        return [[0.1, 0.1, 0.1, 0.1, 0.15, 0.15, 0.15, 0.15], [0.05, 0.1, 0.1, 0.1, 0.1, 0.15, 0.15, 0.2], [0.05, 0.1, 0.1, 0.1, 0.1, 0.15, 0.15, 0.2]];
+      case 9:
+        return [[0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], [0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], [0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]];
+      case 10:
+        return [[0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], [0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], [0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]];
+      default:
+        return []
+      }
+  }
+
   //each round will have no more than a single prize of medallions, which is subtracted from the total medallions
   //iterate through rounds
   for (let i = 0; i < DEFAULT_ROUNDS; i++) {
-    let prizes: InternalPrize[] = [];
+    let _prizes: InternalPrize[] = [];
     //iterate through prizeCountPerRound
     for (let j = 0; j < prizeCountPerRound; j++) {
-      //if this is the last round, make a 50/50 decision to add medallions or money
-      if (i === DEFAULT_ROUNDS - 1) {
+      //if this is the last prize, make a 50/50 decision to add medallions or money
+      if (i === prizeCountPerRound - 1) {
         if (Math.random() > 0.5) {
           const medallionCount = Math.floor(Math.random() * totalMedallions);
           //add medallions
@@ -742,19 +767,30 @@ function generatePrizes(playerCount:number, moneyForPrizes: number, totalMedalli
             prizeType: 'medallions', 
             amount: medallionCount
           };
-          prizes.push(prize);
+          _prizes.push(prize);
           totalMedallions -= medallionCount;
         } else {
-          //add money
-          const money = 
-          totalMoney += money;
+          //get the last tier from the prizeTiersPerRound
+          const amount = prizeTiersPerRound(playerCount)[i][j] * moneyForPrizesPerRound[i];
+          const prize: InternalPrize = {
+            prizeType: 'money',
+            amount
+          };
+          _prizes.push(prize);
         }
       } else {
-        //add money
-        const money = moneyDistribution[Math.floor(Math.random() * moneyDistribution.length)];
-        totalMoney += money;
+        //get the last tier from the prizeTiersPerRound
+        const amount = prizeTiersPerRound(playerCount)[i][j] * moneyForPrizesPerRound[i];
+        const prize: InternalPrize = {
+          prizeType: 'money',
+          amount
+        };
+        _prizes.push(prize);
       }
     }
+    prizes.push(_prizes);
+  }
+  return prizes;
 }
 
 const PRIZE_ROUND_0 = [
