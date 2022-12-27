@@ -778,9 +778,12 @@ export class Impl implements Methods<InternalState> {
     const player = state?.players?.find((player) => player.id === userId);
     player?.lockTrading();
     //check if all players locked trading
-    if (state.players.every((player) => player.lockedTrade)) {
+    if (state.players.every((player) => player.lockedTrade) && state?.turnNumber < 4) {
       ctx.broadcastEvent(HathoraEventTypes.tradingAllPlayersLocked, 'All Players Are Finished Trading, Next Game Starting');
       this.selectARandomGameModule(state, ctx);
+    } else {
+      ctx.broadcastEvent(HathoraEventTypes.tradingAllPlayersLocked, 'All Players Are Finished Trading, Next Game Starting');
+      this.startFinalMedallionRound(state, ctx);
     }
     return Response.ok();
   }
