@@ -19,9 +19,6 @@ export default function Home() {
             <strong>Money Game</strong>
           </div>
           <div>
-            developed by <strong>Brett Cizmar </strong>
-          </div>
-          <div>
             created by <strong>Tom Scott </strong>
           </div>
         </div>

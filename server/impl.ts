@@ -54,7 +54,7 @@ type InternalState = {
   gamesPlayed: GameModule[];
 };
 
-type GameModule = 'prize-draw' | 'lowest-unique-bid' | 'magic-money-machine' | 'pick-a-prize' | 'trading';
+type GameModule = 'prize-draw' | 'lowest-unique-bid' | 'magic-money-machine' | 'pick-a-prize' | 'medallion-majority-vote' | 'trading';
 const DEFAULT_ROUNDS = 3;
 export class Impl implements Methods<InternalState> {
   initialize(): InternalState {

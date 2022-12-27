@@ -13,6 +13,7 @@ types:
     - MAGIC_MONEY_MACHINE
     - PICK_A_PRIZE
     - TRADING
+    - MEDALLION_VOTE
   PrizeType:
     - MONEY
     - MEDALLION
@@ -39,6 +40,32 @@ types:
     turnNumber: int
   Trading: 
     lockedTrade: boolean
+  PlayerBox:
+    id: UserId
+    money: int
+  MedallionVotePlayersInfoPerspectiveVote:
+    id: UserId
+    lockedVote: boolean
+  DecisionPlayerInfoPerspectiveVote:
+    id: UserId
+    lockedDecision: boolean
+  MedallionVoteVotePlayer:
+    votePlayers: MedallionVotePlayersInfoPerspectiveVote[]
+    decisionPlayers: DecisionPlayerInfoPerspectiveVote
+    round: int
+    votesPerRound: boolean[]
+    moneyInBoxPerRound: int[]
+    lockedVote: boolean
+  MedallionVotePlayersInfoPerspectiveDecision:
+    id: UserId
+    lockedVote: boolean
+    votesPerRound: boolean[] #Perfect information on vote results, not sure if this is more fun or "better" than hidden vote results
+  MedallionVoteDecisionPlayer:
+    votePlayers: MedallionVotePlayersInfoPerspectiveDecision[]
+    round: int
+    moneyInBoxesPerRound: PlayerBox[][]
+    moneyAllocation: int
+    lockedDecision: boolean
   PrizeDraw:
     players: PrizeDrawPlayers[]
     round: int
