@@ -848,7 +848,10 @@ export class Impl implements Methods<InternalState> {
     if (state?.medallionMajorityVote?.decisionPlayer.id !== userId) {
       return Response.error('User is not the decision player');
     }
-    state?.medallionMajorityVote?.placeMoneyInPlayerBox(request.playerId, request.amount);
+    const placeMoneyInPlayerBox = state?.medallionMajorityVote?.placeMoneyInPlayerBox(request.playerId, request.amount);
+    if(typeof placeMoneyInPlayerBox === 'string') {
+      return Response.error(placeMoneyInPlayerBox);
+    }
     return Response.ok();
   }
   removeMoneyFromBoxDecision(state: InternalState, userId: string, ctx: Context, request: IRemoveMoneyFromBoxDecisionRequest): Response {
@@ -856,7 +859,10 @@ export class Impl implements Methods<InternalState> {
     if (state?.medallionMajorityVote?.decisionPlayer.id !== userId) {
       return Response.error('User is not the decision player');
     }
-    state?.medallionMajorityVote?.removeMoneyFromPlayerBox(request.playerId, request.amount);
+    const removeMoneyFromPlayerBox = state?.medallionMajorityVote?.removeMoneyFromPlayerBox(request.playerId, request.amount);
+    if(typeof removeMoneyFromPlayerBox === 'string') {
+      return Response.error(removeMoneyFromPlayerBox);
+    }
     return Response.ok();
   }
   submitVote(state: InternalState, userId: string, ctx: Context, request: ISubmitVoteRequest): Response {
