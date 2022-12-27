@@ -98,7 +98,7 @@ const PlayerAreaDecision = ({ players }: { players: MedallionVotePlayersInfoPers
     return (
         <div className='flex flex-wrap m-8 gap-4'>
             {players?.map((player: MedallionVotePlayersInfoPerspectiveDecision, index) => (
-                <div key={index} className={cardCss}>
+                <div key={index} className={`{${cardCss} flex flex-col gap-4`}>
                     <div className="flex flex-col items-center">
                         <div className={headerTextCss}>{nameAbbreviation(getUserName(player.id))}</div>
                     </div>
@@ -109,7 +109,7 @@ const PlayerAreaDecision = ({ players }: { players: MedallionVotePlayersInfoPers
                         </div>
                         <div className="flex flex-row items-center">
                             {player.votesPerRound.map((vote, index) => (
-                                <span key={index} className="flex flex-col items-center">
+                                <span key={index} className="flex flex-col items-center text-lg font-bold text-slate-50">
                                     {vote ? checkMarkSvg() : xMarkSvg()}
                                 </span>
                             ))}
@@ -149,7 +149,7 @@ const SelectionAreaVoter = ({ medallionVoteVotePlayer }: { medallionVoteVotePlay
                             </button>
                         </div>
                     </div>
-                    <LockButton callbackToLock={() => lockVote()} isLocked={medallionVoteVotePlayer?.lockedVote} lockText="Lock Your Vote" unlockText="Unlock Your Vote" />
+                    <LockButton callbackToLock={() => lockVote()} isLocked={medallionVoteVotePlayer?.lockedVote} lockText="Your Vote Has Been Locked" unlockText="Lock Your Vote" />
                 </>
                 :
                 <>

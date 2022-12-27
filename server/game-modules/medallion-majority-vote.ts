@@ -81,12 +81,12 @@ export class InternalMedallionMajorityVote {
         }
         //iterate over players and reset values
         this.playersVoting.forEach((player) => player.resetValues());
-        //clear revealed paddles
-        this.round++;
         //iterate over decisionPlayer moneyinBoxesPerRound
         this.decisionPlayer.moneyInBoxesPerRound[this.round] = this.decisionPlayer.moneyInBoxesPerRound[this.round - 1];
+        this.decisionPlayer.resetValues();
         //switch phasing players
         this.phasingPlayer = 'MEDALLION_PLAYER';
+        this.round++;
     }
 
     placeMoneyInPlayerBox(playerId: string, money: number): ServerError | undefined {
