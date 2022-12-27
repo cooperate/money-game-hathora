@@ -155,7 +155,7 @@ export class InternalMedallionMajorityVote {
         });
     }
 
-    vote(playerId: string, vote: boolean): void {
+    submitVote(playerId: string, vote: boolean): void {
         const player = this.playersVoting.find((player) => player.id === playerId);
         if (!player) {
             throw new Error("Player not found");

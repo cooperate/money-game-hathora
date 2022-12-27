@@ -29,7 +29,12 @@ import {
   ILockTradingRequest,
   MedallionVoteDecisionPlayer,
   MedallionVoteVotePlayer,
-  PlayerBox
+  PlayerBox,
+  ILockDecisionRequest,
+  IPutMoneyInBoxDecisionRequest,
+  IRemoveMoneyFromBoxDecisionRequest,
+  ISubmitVoteRequest,
+  ILockVoteRequest
 } from "../api/types";
 import { InternalPlayerInfo } from "./models/player";
 import { InternalPrizeDraw, PrizeDrawPlayer } from "./game-modules/prize-draw";
@@ -168,6 +173,12 @@ export class Impl implements Methods<InternalState> {
         state.pickAPrizeGame = new InternalPickAPrize(state.players, generatePrizes(state.players.length, 2000, 3));
         state.currentRoundGameModule = 'pick-a-prize';
         break;
+      case 'medallion-majority-vote':
+        //check which player has the most medallions
+        const playerWithMostMedallions = state.players.reduce((prev, current) => (prev.medallions > current.medallions ? prev : current));
+        //get all the other players
+        const votePlayers = state.players.filter((player) => player.id !== playerWithMostMedallions.id);
+        state.medallionMajorityVote = new InternalMedallionMajorityVote(votePlayers, playerWithMostMedallions, 3, state.bank);
       default:
         return;
     }
@@ -766,6 +777,25 @@ export class Impl implements Methods<InternalState> {
       this.selectARandomGameModule(state, ctx);
     }
     return Response.ok();
+  }
+
+  /*******
+   * Medallion Majority Vote
+   */
+  lockDecision(state: InternalState, userId: string, ctx: Context, request: ILockDecisionRequest): Response {
+      return Response.ok();
+  }
+  putMoneyInBoxDecision(state: InternalState, userId: string, ctx: Context, request: IPutMoneyInBoxDecisionRequest): Response {
+      return Response.ok();
+  }
+  removeMoneyFromBoxDecision(state: InternalState, userId: string, ctx: Context, request: IRemoveMoneyFromBoxDecisionRequest): Response {
+      return Response.ok();
+  }
+  submitVote(state: InternalState, userId: string, ctx: Context, request: ISubmitVoteRequest): Response {
+      return Response.ok();
+  }
+  lockVote(state: InternalState, userId: string, ctx: Context, request: ILockVoteRequest): Response {
+      return Response.ok();
   }
 }
 

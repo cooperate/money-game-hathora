@@ -171,8 +171,19 @@ methods:
   selectAPrize:
     prizeNumber: int
   lockPrizeSelection:
-  #trading
+  #Trading
   lockTrading:
+  #Medallion Majority Vote
+  lockDecision:
+  putMoneyInBoxDecision:
+    playerId: UserId
+    amount: int
+  removeMoneyFromBoxDecision:
+    playerId: UserId
+    amount: int
+  submitVote:
+    vote: boolean
+  lockVote:
 auth:
   anonymous: {}
 
