@@ -17,14 +17,14 @@ export class MedallionMajorityVotePlayer extends InternalPlayerInfo {
     }
 }
 
-type PlayerBox = {
+export type InternalPlayerBox = {
     playerId: string;
     moneyInBox: number;
 }
 
 export class MedallionMajorityDecisionPlayer extends InternalPlayerInfo {
     public lockDeposit = false;
-    public moneyinBoxesPerRound: PlayerBox[][] = [];
+    public moneyinBoxesPerRound: InternalPlayerBox[][] = [];
 
     constructor(id: string, money: number, medallions: number) {
         super(id);
@@ -63,12 +63,16 @@ export class InternalMedallionMajorityVote {
         return players.map((player) => new MedallionMajorityVotePlayer(player.id, player.money, player.medallions));
     }
 
-    getMedallionDealPlayerById(playerId: string): MedallionMajorityVotePlayer {
+    getMedallionMajorityVotePlayerById(playerId: string): MedallionMajorityVotePlayer {
         const player = this.playersVoting.find((player) => player.id === playerId);
         if (!player) {
             throw new Error("Player not found");
         }
         return player;
+    }
+
+    getMedallionMajorityVoteDecisionPlayer(): MedallionMajorityDecisionPlayer {
+        return this.decisionPlayer;
     }
 
     advanceRound(): void {

@@ -38,6 +38,9 @@ types:
     magicMoneyMachine: MagicMoneyMachine?
     currentGame: RoundGameModule?
     turnNumber: int
+    medallionVoteDecisionPlayer: MedallionVoteDecisionPlayer? # for more complicated assymetric state, should probably go towards an entirely different playerstate object, for this one use case nesting is find
+    # OR dependening on which player has the most medallions
+    medallionVoteVotePlayer: MedallionVoteVotePlayer?
   Trading: 
     lockedTrade: boolean
   PlayerBox:
@@ -48,10 +51,10 @@ types:
     lockedVote: boolean
   DecisionPlayerInfoPerspectiveVote:
     id: UserId
-    lockedDecision: boolean
+    lockDeposit: boolean
   MedallionVoteVotePlayer:
     votePlayers: MedallionVotePlayersInfoPerspectiveVote[]
-    decisionPlayers: DecisionPlayerInfoPerspectiveVote
+    decisionPlayer: DecisionPlayerInfoPerspectiveVote
     round: int
     votesPerRound: boolean[]
     moneyInBoxPerRound: int[]

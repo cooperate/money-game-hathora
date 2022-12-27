@@ -26,13 +26,17 @@ import {
   PrizeType,
   PickAPrize,
   MagicMoneyMachine,
-  ILockTradingRequest
+  ILockTradingRequest,
+  MedallionVoteDecisionPlayer,
+  MedallionVoteVotePlayer,
+  PlayerBox
 } from "../api/types";
 import { InternalPlayerInfo } from "./models/player";
 import { InternalPrizeDraw, PrizeDrawPlayer } from "./game-modules/prize-draw";
 import { InternalLowestUniqueBid, LowestUniqueBidPlayer } from "./game-modules/lowest-unique-bid";
 import { InternalMagicMoneyMachine, MagicMoneyMachinePlayer } from "./game-modules/magic-money-machine";
 import { InternalPickAPrize, PickAPrizePlayer, InternalPrize, InternalPrizeType } from "./game-modules/pick-a-prize";
+import { InternalMedallionMajorityVote, InternalPlayerBox } from "./game-modules/medallion-majority-vote";
 
 const TOTAL_TURNS = 4;
 
@@ -49,6 +53,7 @@ type InternalState = {
   lowestUniqueBidGame: InternalLowestUniqueBid | undefined;
   magicMoneyMachineGame: InternalMagicMoneyMachine | undefined;
   pickAPrizeGame: InternalPickAPrize | undefined;
+  medallionMajorityVote: InternalMedallionMajorityVote | undefined;
   turnNumber: number;
   gameStatus: GameStatus;
   gamesPlayed: GameModule[];
@@ -69,9 +74,10 @@ export class Impl implements Methods<InternalState> {
       lowestUniqueBidGame: undefined,
       magicMoneyMachineGame: undefined,
       pickAPrizeGame: undefined,
+      medallionMajorityVote: undefined,
       turnNumber: 0,
       gameStatus: 'waiting',
-      gamesPlayed: []
+      gamesPlayed: [],
     };
   }
   joinGame(state: InternalState, userId: UserId): Response {
@@ -125,7 +131,7 @@ export class Impl implements Methods<InternalState> {
       player.lockedTrade = false;
     });
     state.currentRoundGameModule = 'trading';
-    
+
     ctx.broadcastEvent(HathoraEventTypes.startTradingRound, `Trading Round Started`);
   }
   selectARandomGameModule(state: InternalState, ctx: Context): void {
@@ -184,18 +190,18 @@ export class Impl implements Methods<InternalState> {
       magicMoneyMachine: this.mapMagicMoneyMachine(state.magicMoneyMachineGame, userId),
       currentGame: this.mapToRoundGameModule(state.currentRoundGameModule),
       turnNumber: state.turnNumber,
+      ...this.mapMedallionVote(state.medallionMajorityVote, userId, state.players)
     };
   }
   /*******
    * MAPPERS
    */
-   mapToPlayerInfo(players: InternalPlayerInfo[]): PlayerInfo[] {
+  mapToPlayerInfo(players: InternalPlayerInfo[]): PlayerInfo[] {
     return players.map((player) => ({
-        id: player.id,
-        lockedTrade: player.lockedTrade,
+      id: player.id,
+      lockedTrade: player.lockedTrade,
     }));
   }
-      
   mapToRoundGameModule(gameModule: GameModule | undefined): RoundGameModule | undefined {
     if (gameModule === undefined) {
       return undefined;
@@ -214,6 +220,53 @@ export class Impl implements Methods<InternalState> {
       default:
         return undefined;
     }
+  }
+
+  mapMedallionVote(medallionVote: InternalMedallionMajorityVote | undefined, userId: string, players: InternalPlayerInfo[]): MedallionVoteDecisionPlayer | MedallionVoteVotePlayer | undefined {
+    if (medallionVote === undefined) {
+      return undefined;
+    }
+    //check which player has the most medallions
+    const playerWithMostMedallions = players.reduce((prev, current) => (prev.medallions > current.medallions) ? prev : current);
+    //if the player with the most medallions is the current player, return the MedallionVoteDecisionPlayer
+    if (playerWithMostMedallions.id === userId) {
+      return {
+        votePlayers: medallionVote.playersVoting.map((playerVoting) => ({
+          id: playerVoting.id,
+          lockedVote: playerVoting.lockVote,
+          votesPerRound: playerVoting.votePerRound,
+        })),
+        round: medallionVote.round,
+        moneyInBoxesPerRound: this.mapMoneyInBoxesPerRoundToPlayerBox(medallionVote?.decisionPlayer?.moneyinBoxesPerRound),
+        moneyAllocation: medallionVote.moneyAllocation,
+        lockedDecision: medallionVote?.decisionPlayer?.lockDeposit
+      }
+    } else //is a voting player
+    {
+      const selfVotePlayer = medallionVote.playersVoting.find((playerVoting) => playerVoting.id === userId);
+      return {
+        votePlayers: medallionVote.playersVoting.map((playerVoting) => ({
+          id: playerVoting.id,
+          lockedVote: playerVoting.lockVote
+        })),
+        decisionPlayer: {
+          id: playerWithMostMedallions.id,
+          lockDeposit: medallionVote?.decisionPlayer?.lockDeposit,
+        },
+        round: medallionVote.round,
+        votesPerRound: selfVotePlayer?.votePerRound || [],
+        moneyInBoxPerRound: selfVotePlayer?.moneyInBoxPerRound || [],
+        lockedVote: selfVotePlayer?.lockVote || false
+      }
+    }
+  }
+
+  mapMoneyInBoxesPerRoundToPlayerBox(moneyInBoxesPerRound: InternalPlayerBox[][]): PlayerBox[][] {
+    return moneyInBoxesPerRound.map((round) => round.map((playerBox) => ({
+      id: playerBox.playerId,
+      money: playerBox.moneyInBox
+    }))
+    );
   }
   mapMagicMoneyMachine(magicMoneyMachine: InternalMagicMoneyMachine | undefined, userId: string): MagicMoneyMachine | undefined {
     if (magicMoneyMachine === undefined) {
@@ -307,12 +360,12 @@ export class Impl implements Methods<InternalState> {
     }
   }
   mapPrizesPerRound(prizesPerRound: InternalPrize[][]): Prize[][] {
-    return prizesPerRound.map((prizesForRound: InternalPrize[]): Prize[] => 
+    return prizesPerRound.map((prizesForRound: InternalPrize[]): Prize[] =>
       prizesForRound.map((prize: InternalPrize) => ({
         prizeType: this.mapInternalPrizeTypeToPrizeType(prize.prizeType),
         amount: prize.amount,
       })
-    ));
+      ));
   }
   /*********
    * MONEY TRANSFER
@@ -324,7 +377,7 @@ export class Impl implements Methods<InternalState> {
     }
     state.players.find((player) => player.id === userId)!.money += amount;
     state.bank -= amount;
-    if(amount > 0) {
+    if (amount > 0) {
       ctx.sendEvent(HathoraEventTypes.moneyTransfer, `You were just transferred $${amount}!`, userId);
     }
   }
@@ -336,13 +389,13 @@ export class Impl implements Methods<InternalState> {
     state.players.find((player) => player.id === userId)!.medallions += amount;
     state.medallionsAvailable -= amount;
 
-    if(amount > 0) {
+    if (amount > 0) {
       ctx.sendEvent(HathoraEventTypes.medallionTransfer, `You were just transferred ${amount} medallion!`, userId);
     }
   }
 
   transferMoney(state: InternalState, userId: string, ctx: Context, request: ITransferMoneyRequest): Response {
-    if(state.currentRoundGameModule !== 'trading') {
+    if (state.currentRoundGameModule !== 'trading') {
       return Response.error("Current round is not a trading round");
     }
     //check if player has enough money to send
@@ -352,7 +405,7 @@ export class Impl implements Methods<InternalState> {
     //send money
     state.players.find((player) => player.id === userId)!.money -= request.amount;
     state.players.find((player) => player.id === request.playerIdToSendTo)!.money += request.amount;
-    if(request?.amount > 0) {
+    if (request?.amount > 0) {
       ctx.sendEvent(HathoraEventTypes.moneyTransfer, `You were just transferred $${request?.amount}!`, request?.playerIdToSendTo);
     }
     return Response.ok();
@@ -371,12 +424,12 @@ export class Impl implements Methods<InternalState> {
     } catch (e: any) {
       return Response.error(e?.message || 'Could not get prize draw player');
     }
-    
+
     if (prizeDrawPlayer === undefined) {
       return Response.error('Player is not in the current prize draw game');
     }
     const enterTickets = state.prizeDrawGame?.enterTicketsAmount(prizeDrawPlayer, request.tickets);
-    if(typeof enterTickets === 'string') {
+    if (typeof enterTickets === 'string') {
       return Response.error(enterTickets);
     }
     return Response.ok();
@@ -386,7 +439,7 @@ export class Impl implements Methods<InternalState> {
     if (state.currentRoundGameModule !== 'prize-draw') {
       return Response.error('Current round is not a prize draw');
     }
-    
+
     let prizeDrawPlayer;
     try {
       prizeDrawPlayer = state.prizeDrawGame?.getPrizeDrawPlayer(userId);
@@ -396,9 +449,9 @@ export class Impl implements Methods<InternalState> {
     if (prizeDrawPlayer === undefined) {
       return Response.error('Player is not in the current prize draw game');
     }
-    
+
     const lockTickets = state.prizeDrawGame?.lockTickets(prizeDrawPlayer);
-    if(typeof lockTickets === 'string') {
+    if (typeof lockTickets === 'string') {
       return Response.error(lockTickets);
     }
     //if all players have locked their tickets, send an event that all players have locked their tickets
@@ -406,7 +459,7 @@ export class Impl implements Methods<InternalState> {
       ctx.broadcastEvent(HathoraEventTypes.prizeDrawPlayersLocked, 'All Players Have Locked In Selections, Determining Winner');
       //determine the winner
       let winner;
-      try { 
+      try {
         winner = state.prizeDrawGame?.determineWinner();
       } catch (e: any) {
         return Response.error(e?.message || 'Could not determine winner');
@@ -458,7 +511,7 @@ export class Impl implements Methods<InternalState> {
       return Response.error('Player is not in the lowest-unique-bid game');
     }
     const choosePaddle = state.lowestUniqueBidGame?.choosePaddle(userId, request.paddleNumber);
-    if(typeof choosePaddle === 'string') {
+    if (typeof choosePaddle === 'string') {
       return Response.error(choosePaddle);
     }
     return Response.ok();
@@ -495,7 +548,7 @@ export class Impl implements Methods<InternalState> {
         return Response.error(e?.message || 'Could not determine winner');
       }
       //In this game there is a possibility of their being no winner
-      if(winner) {
+      if (winner) {
         //delegate winnings
         try {
           this.transferMoneyFromBankToPlayer(state, winner.id, winner.winningsPerRound[state.lowestUniqueBidGame?.round || 0], ctx);
@@ -539,7 +592,7 @@ export class Impl implements Methods<InternalState> {
       return Response.error('Player is not in the magic-money-machine game');
     }
     const putMoneyInBox = state.magicMoneyMachineGame?.putMoneyInBox(request.amount, magicMoneyMachinePlayer);
-    if(typeof putMoneyInBox === 'string') {
+    if (typeof putMoneyInBox === 'string') {
       return Response.error(putMoneyInBox);
     }
     return Response.ok();
@@ -553,7 +606,7 @@ export class Impl implements Methods<InternalState> {
       return Response.error('Player is not in the magic-money-machine game');
     }
     const removeMoneyFromBox = state.magicMoneyMachineGame?.removeMoneyFromBox(request.amount, magicMoneyMachinePlayer);
-    if(typeof removeMoneyFromBox === 'string') {
+    if (typeof removeMoneyFromBox === 'string') {
       return Response.error(removeMoneyFromBox);
     }
     return Response.ok();
@@ -566,9 +619,9 @@ export class Impl implements Methods<InternalState> {
     if (magicMoneyMachinePlayer === undefined) {
       return Response.error('Player is not in the magic-money-machine game');
     }
-    
+
     const lockMoney = state.magicMoneyMachineGame?.lockMoney(magicMoneyMachinePlayer);
-    if(typeof lockMoney === 'string') {
+    if (typeof lockMoney === 'string') {
       return Response.error(lockMoney);
     }
     //if all players have locked, payout the players
@@ -639,7 +692,7 @@ export class Impl implements Methods<InternalState> {
       return Response.error('Player is not in the pick-a-prize game');
     }
     const selectAPrize = state.pickAPrizeGame?.selectAPrize(request.prizeNumber, pickAPrizePlayer);
-    if(typeof selectAPrize === 'string') {
+    if (typeof selectAPrize === 'string') {
       return Response.error(selectAPrize);
     }
     return Response.ok();
@@ -720,7 +773,7 @@ function createPlayer(id: UserId): InternalPlayerInfo {
   return new InternalPlayerInfo(id);
 }
 
-function generatePrizes(playerCount:number, moneyForPrizes: number, totalMedallions: number) {
+function generatePrizes(playerCount: number, moneyForPrizes: number, totalMedallions: number) {
   const prizes: InternalPrize[][] = [];
   //given the playercount, each round should have an equivalent number of prizes as there are players
   const prizeCountPerRound = playerCount;
@@ -728,7 +781,7 @@ function generatePrizes(playerCount:number, moneyForPrizes: number, totalMedalli
   const moneyForPrizesPerRound = [moneyForPrizes * 0.15, moneyForPrizes * 0.3, moneyForPrizes * 0.45];
   //given the playerCount, prizes should have weighted tiers
   const prizeTiersPerRound = (playerCount: number): number[][] => {
-    switch(playerCount) {
+    switch (playerCount) {
       case 2:
         return [[0.3, 0.7], [0, 1], [0.1, 0.9]];
       case 3:
@@ -749,7 +802,7 @@ function generatePrizes(playerCount:number, moneyForPrizes: number, totalMedalli
         return [[0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], [0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], [0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]];
       default:
         return []
-      }
+    }
   }
 
   //each round will have no more than a single prize of medallions, which is subtracted from the total medallions
@@ -764,7 +817,7 @@ function generatePrizes(playerCount:number, moneyForPrizes: number, totalMedalli
           const medallionCount = Math.floor(Math.random() * totalMedallions);
           //add medallions
           const prize: InternalPrize = {
-            prizeType: 'medallions', 
+            prizeType: 'medallions',
             amount: medallionCount
           };
           _prizes.push(prize);
