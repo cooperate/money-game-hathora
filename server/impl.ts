@@ -173,16 +173,20 @@ export class Impl implements Methods<InternalState> {
         state.pickAPrizeGame = new InternalPickAPrize(state.players, generatePrizes(state.players.length, 2000, 3));
         state.currentRoundGameModule = 'pick-a-prize';
         break;
-      case 'medallion-majority-vote':
-        //check which player has the most medallions
-        const playerWithMostMedallions = state.players.reduce((prev, current) => (prev.medallions > current.medallions ? prev : current));
-        //get all the other players
-        const votePlayers = state.players.filter((player) => player.id !== playerWithMostMedallions.id);
-        state.medallionMajorityVote = new InternalMedallionMajorityVote(votePlayers, playerWithMostMedallions, 3, state.bank);
       default:
         return;
     }
     ctx.broadcastEvent(HathoraEventTypes.newRound, `New Game Round: ${randomGameModule}`);
+  }
+
+  startFinalMedallionRound(state: InternalState, ctx: Context): void {
+    //check which player has the most medallions
+    const playerWithMostMedallions = state.players.reduce((prev, current) => (prev.medallions > current.medallions ? prev : current));
+    //get all the other players
+    const votePlayers = state.players.filter((player) => player.id !== playerWithMostMedallions.id);
+    state.medallionMajorityVote = new InternalMedallionMajorityVote(votePlayers, playerWithMostMedallions, 3, state.bank);  
+    state.currentRoundGameModule = 'medallion-majority-vote';
+    ctx.broadcastEvent(HathoraEventTypes.newRound, `New Game Round: medallion-majority-vote`);
   }
   /****
    * MAP TO USER STATE
@@ -228,6 +232,8 @@ export class Impl implements Methods<InternalState> {
         return RoundGameModule.PICK_A_PRIZE;
       case 'trading':
         return RoundGameModule.TRADING;
+      case 'medallion-majority-vote':
+        return RoundGameModule.MEDALLION_MAJORITY_VOTE;
       default:
         return undefined;
     }

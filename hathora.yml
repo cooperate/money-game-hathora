@@ -13,7 +13,7 @@ types:
     - MAGIC_MONEY_MACHINE
     - PICK_A_PRIZE
     - TRADING
-    - MEDALLION_VOTE
+    - MEDALLION_MAJORITY_VOTE
   PrizeType:
     - MONEY
     - MEDALLION
