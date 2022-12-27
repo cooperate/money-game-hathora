@@ -208,7 +208,6 @@ export class Impl implements Methods<InternalState> {
     ctx.broadcastEvent(HathoraEventTypes.newRound, `New Game Round: medallion-majority-vote`);
   }
 
-
   displayFinalResults(state: InternalState, ctx: Context): void {
     state.currentRoundGameModule = 'final-results';
     state.displayFinalResults = true;
@@ -904,7 +903,10 @@ export class Impl implements Methods<InternalState> {
     if (state?.medallionMajorityVote?.playersVoting.find((player) => player.id === userId) === undefined) {
       return Response.error('User is not the vote player');
     }
-    state?.medallionMajorityVote?.submitVote(userId, request.vote);
+    const submitVote = state?.medallionMajorityVote?.submitVote(userId, request.vote);
+    if(typeof submitVote === 'string') {
+      return Response.error(submitVote);
+    }
     return Response.ok();
   }
   lockVote(state: InternalState, userId: string, ctx: Context, request: ILockVoteRequest): Response {

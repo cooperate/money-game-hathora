@@ -98,6 +98,10 @@ export class InternalMedallionMajorityVote {
         if (!player) {
             throw new Error("Player not found");
         }
+        //if already locked
+        if(this.decisionPlayer.lockDeposit) {
+            return "Already locked deposit.";
+        }
         //if any votes are locked, return early
         if(this.playersVoting.some((player) => player.lockVote)) {
             return undefined;
@@ -130,6 +134,10 @@ export class InternalMedallionMajorityVote {
         const player = this.playersVoting.find((player) => player.id === playerId);
         if (!player) {
             throw new Error("Player not found");
+        }
+        //if already locked
+        if(this.decisionPlayer.lockDeposit) {
+            return "Already locked deposit.";
         }
         //if any votes are locked, return early
         if(this.playersVoting.some((player) => player.lockVote)) {
@@ -173,13 +181,13 @@ export class InternalMedallionMajorityVote {
         });
     }
 
-    submitVote(playerId: string, vote: boolean): void {
+    submitVote(playerId: string, vote: boolean): undefined | ServerError {
         const player = this.playersVoting.find((player) => player.id === playerId);
         if (!player) {
-            throw new Error("Player not found");
+            return "Player not found";
         }
         if (player.lockVote) {
-            throw new Error("Player has already locked vote");
+            return "Player has already locked vote";
         }
         player.votePerRound[this.round] = vote;
     }

@@ -74,8 +74,9 @@ const SelectionArea = ({ players }: { players: PlayerInfo[] | undefined }) => {
                                 placeholder="Enter An Amount"
                                 className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
                             />
-                            <button disabled={moneyToSend.find(playersMoney => playersMoney.playerId == player.id)?.amount ? false : true} onClick={() => transferMoneyComponent(player.id)} className={`block shadow-md ${moneyToSend.find(playersMoney => playersMoney.playerId == player.id)?.amount ? 'bg-green-500 hover:bg-green-900' : 'bg-slate-500'} rounded p-2 font-semibold text-white text-center h-full`}>
-                                Send Money
+                            <button disabled={moneyToSend.find(playersMoney => playersMoney.playerId == player.id)?.amount ? false : true} onClick={() => transferMoneyComponent(player.id)} className={`flex flex-row gap-2 shadow-md ${moneyToSend.find(playersMoney => playersMoney.playerId == player.id)?.amount ? 'bg-green-500 hover:bg-green-900' : 'bg-slate-500'} rounded p-2 font-semibold text-white text-center h-full`}>
+                                <span>Send Money</span> 
+                                <span>{moneySvg()}</span>
                             </button>
                         </div>
                         {playerState?.turnNumber == 5 &&
@@ -86,8 +87,9 @@ const SelectionArea = ({ players }: { players: PlayerInfo[] | undefined }) => {
                                     placeholder="Enter An Amount"
                                     className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
                                 />
-                                <button disabled={medallionsToSend.find(playersMedallions => playersMedallions.playerId == player.id)?.amount ? false : true} onClick={() => transferMedallionsComponent(player.id)} className={`block shadow-md ${medallionsToSend.find(playersMedallions => playersMedallions.playerId == player.id)?.amount ? 'bg-green-500 hover:bg-green-900' : 'bg-slate-500'} rounded p-2 font-semibold text-white text-center h-full`}>
-                                    Send Money
+                                <button disabled={medallionsToSend.find(playersMedallions => playersMedallions.playerId == player.id)?.amount ? false : true} onClick={() => transferMedallionsComponent(player.id)} className={`flex flex-row gap-2 shadow-md ${medallionsToSend.find(playersMedallions => playersMedallions.playerId == player.id)?.amount ? 'bg-green-500 hover:bg-green-900' : 'bg-slate-500'} rounded p-2 font-semibold text-white text-center h-full`}>
+                                    <span>Send Medallion</span> 
+                                    <span>{medallionSvg()}</span>
                                 </button>
                             </div>
                         }

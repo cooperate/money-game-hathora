@@ -39,54 +39,63 @@ const SelectionAreaDecision = ({ medallionVoteDecisionPlayer }: { medallionVoteD
             setMoneyToWithdraw([...moneyToWithdraw, { id, money }]);
         }
     }
-
+    const badgeRed = 'bg-red-100 text-red-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-red-200 dark:text-red-900';
     return (
         <div className='flex flex-col m-8 gap-4'>
             <div className='flex flex-row gap-2'>
-                <span className='mb-2 text-lg font-bold'>Your Money {moneySvg()}</span> 
+                <span className='mb-2 text-lg font-bold'>Your Money {moneySvg()}</span>
                 <span className='mb-2 text-lg font-bold'>{medallionVoteDecisionPlayer?.moneyAllocation}</span>
                 <GameInfoModal title={'Medallion Majority Vote Rules'} text={'In this round the player with the most medallions (the decision player) is in charge of formulating a deal with other players (voter players) for the remaining money in the bank.  The player in the decision role is free to allocate as much money as they would like into each voter players box.  Each voter player will then observe the money in their box.  If the majority votes to approve the deal they have been given the money is distributed.  If the vote fails, a new round is started and the same process occurs again.  If a deal cannot be brokered over three rounds, no money is distributed.'} />
             </div>
             <div className="flex flex-col gap-4">
-                <span className='mb-2 text-lg font-bold'>Deposit Money For Other Players To Make A Deal</span>
-                <div className='flex flex-wrap gap-4'>
-                    {medallionVoteDecisionPlayer?.votePlayers.map((player, index) => (
-                        <div key={index} className='flex flex-col gap-2 border-gray-200 rounded-lg dark:bg-gray-300 dark:border-gray-400 p-2'>
-                            <div className='flex flex-row'>
-                                <input
-                                    type="number"
-                                    onChange={(e) => componentEnterAmountDeposit(player.id, parseFloat(e.target.value))}
-                                    placeholder="Enter An Amount"
-                                    className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
-                                />
-                                <button disabled={moneyToDeposit.find(playersMoney => playersMoney.id == player.id)?.money ? false : true} onClick={() => putMoneyInBoxDecision(player.id, moneyToDeposit.find(playerMoney => playerMoney.id == player.id)?.money || 0)} className={`block shadow-md ${moneyToDeposit.find(playersMoney => playersMoney.id == player.id)?.money ? 'bg-green-500 hover:bg-green-900' : 'bg-slate-500'} rounded p-2 font-semibold text-white text-center h-full`}>
-                                    Place Money In Box
-                                </button>
-                            </div>
-                            <div className={cardCss}>
-                                <div className='flex flex-row gap-2'>
-                                    <div className={headerTextCss}>{nameAbbreviation(getUserName(player.id))}</div>
-                                    <span className="mb-2 text-lg font-bold text-slate-50">{moneySvg()}</span>
-                                    <span className="mb-2 text-lg font-bold text-slate-50">{medallionVoteDecisionPlayer?.moneyInBoxesPerRound[medallionVoteDecisionPlayer?.round]?.find((playerBox) => playerBox.id == player.id)?.money || 0}</span>
-                                </div>
-                                <div className="flex flex-row items-center justify-center">
+                {medallionVoteDecisionPlayer?.phasingPlayer == PhasingPlayerMedallionVote.DECISION ?
+                    <>
+                        <span className='mb-2 text-lg font-bold'>Deposit Money For Other Players To Make A Deal</span>
+                        {medallionVoteDecisionPlayer?.round == 2 && <span className={badgeRed}>This is your last chance to reach a deal with the voter players! If they reject this deal, no one gets any money from the bank pool.</span>}
+                        <div className='flex flex-wrap gap-4'>
+                            {medallionVoteDecisionPlayer?.votePlayers.map((player, index) => (
+                                <div key={index} className='flex flex-col gap-2 border-gray-200 rounded-lg dark:bg-gray-300 dark:border-gray-400 p-2'>
                                     <div className='flex flex-row'>
                                         <input
                                             type="number"
-                                            onChange={(e) => componentEnterAmountWithdraw(player.id, parseFloat(e.target.value))}
+                                            onChange={(e) => componentEnterAmountDeposit(player.id, parseFloat(e.target.value))}
                                             placeholder="Enter An Amount"
                                             className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
                                         />
-                                        <button disabled={moneyToWithdraw.find(playersMoney => playersMoney.id == player.id)?.money ? false : true} onClick={() => removeMoneyFromBoxDecision(player.id, moneyToWithdraw.find(playerMoney => playerMoney.id == player.id)?.money || 0)} className={`block shadow-md ${moneyToWithdraw.find(playersMoney => playersMoney.id == player.id)?.money ? 'bg-green-500 hover:bg-green-900' : 'bg-slate-500'} rounded p-2 font-semibold text-white text-center h-full`}>
-                                            Remove Money From Box
+                                        <button disabled={moneyToDeposit.find(playersMoney => playersMoney.id == player.id)?.money ? false : true} onClick={() => putMoneyInBoxDecision(player.id, moneyToDeposit.find(playerMoney => playerMoney.id == player.id)?.money || 0)} className={`block shadow-md ${moneyToDeposit.find(playersMoney => playersMoney.id == player.id)?.money ? 'bg-green-500 hover:bg-green-900' : 'bg-slate-500'} rounded p-2 font-semibold text-white text-center h-full`}>
+                                            Place Money In Box
                                         </button>
                                     </div>
+                                    <div className={cardCss}>
+                                        <div className='flex flex-row gap-2'>
+                                            <div className={headerTextCss}>{nameAbbreviation(getUserName(player.id))}</div>
+                                            <span className="mb-2 text-lg font-bold text-slate-50">{moneySvg()}</span>
+                                            <span className="mb-2 text-lg font-bold text-slate-50">{medallionVoteDecisionPlayer?.moneyInBoxesPerRound[medallionVoteDecisionPlayer?.round]?.find((playerBox) => playerBox.id == player.id)?.money || 0}</span>
+                                        </div>
+                                        <div className="flex flex-row items-center justify-center">
+                                            <div className='flex flex-row'>
+                                                <input
+                                                    type="number"
+                                                    onChange={(e) => componentEnterAmountWithdraw(player.id, parseFloat(e.target.value))}
+                                                    placeholder="Enter An Amount"
+                                                    className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
+                                                />
+                                                <button disabled={moneyToWithdraw.find(playersMoney => playersMoney.id == player.id)?.money ? false : true} onClick={() => removeMoneyFromBoxDecision(player.id, moneyToWithdraw.find(playerMoney => playerMoney.id == player.id)?.money || 0)} className={`block shadow-md ${moneyToWithdraw.find(playersMoney => playersMoney.id == player.id)?.money ? 'bg-green-500 hover:bg-green-900' : 'bg-slate-500'} rounded p-2 font-semibold text-white text-center h-full`}>
+                                                    Remove Money From Box
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
-                <LockButton callbackToLock={() => lockDeposits()} lockText="Your Deal Has Been Locked" unlockText="Lock In Your Deal" isLocked={medallionVoteDecisionPlayer?.lockedDecision || false} />
+                        <LockButton callbackToLock={() => lockDeposits()} lockText="Your Deal Has Been Locked" unlockText="Lock In Your Deal" isLocked={medallionVoteDecisionPlayer?.lockedDecision || false} />
+                    </>
+                    :
+                    <>
+                        <span className='mb-2 text-lg font-bold'>Waiting For Voter Players To Accept or Reject The Proposed Deal</span>
+                    </>
+                }
             </div>
         </div >
     )
@@ -126,14 +135,14 @@ const PlayerAreaDecision = ({ players }: { players: MedallionVotePlayersInfoPers
 const SelectionAreaVoter = ({ medallionVoteVotePlayer }: { medallionVoteVotePlayer: MedallionVoteVotePlayer | undefined }) => {
     const { lockVote, submitVote } = useHathoraContext();
     const cardCssVoteButton = 'p-1 bg-white border border-gray-200 rounded-lg shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700';
-    
+
     return (
         <div className='flex flex-col gap-4'>
             {medallionVoteVotePlayer?.phasingPlayer === PhasingPlayerMedallionVote.VOTER ?
                 <>
                     <span className='mb-2 text-lg font-bold'>Your Deal For This Round</span>
                     <div className='flex flex-row'>
-                        <span>{moneySvg()}</span> 
+                        <span>{moneySvg()}</span>
                         <span className="text-lg font-bold">{medallionVoteVotePlayer?.moneyInBoxPerRound[medallionVoteVotePlayer?.round]}</span>
                     </div>
                     <span className='mb-2 text-lg font-bold'>Vote For This Deal</span>
