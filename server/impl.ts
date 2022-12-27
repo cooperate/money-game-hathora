@@ -186,7 +186,7 @@ export class Impl implements Methods<InternalState> {
 
   startFinalMedallionRound(state: InternalState, ctx: Context): void {
     //check which player has the most medallions
-    const playerWithMostMedallions = state.players.reduce((prev, current) => (prev.medallions > current.medallions ? prev : current));
+    const playerWithMostMedallions = state.players?.reduce((prev, current) => (prev.medallions > current.medallions ? prev : current), state.players?.[0]);
     //get all the other players
     const votePlayers = state.players.filter((player) => player.id !== playerWithMostMedallions.id);
     state.medallionMajorityVote = new InternalMedallionMajorityVote(votePlayers, playerWithMostMedallions, 3, state.bank);
@@ -206,9 +206,9 @@ export class Impl implements Methods<InternalState> {
   getUserState(state: InternalState, userId: UserId): PlayerState {
     let playerIsDecisionPlayer: boolean;
     //check which player has the most medallions
-    const playerWithMostMedallions = state?.players.reduce((prev, current) => (prev.medallions > current.medallions) ? prev : current);
+    const playerWithMostMedallions = state?.players.reduce((prev, current) => (prev.medallions > current.medallions) ? prev : current, state?.players?.[0]);
     //if the player with the most medallions is the current player, return the MedallionVoteDecisionPlayer
-    if (playerWithMostMedallions.id === userId) {
+    if (playerWithMostMedallions?.id === userId) {
       playerIsDecisionPlayer = true;
     } else {
       playerIsDecisionPlayer = false;
@@ -321,10 +321,11 @@ export class Impl implements Methods<InternalState> {
   }
 
   mapMoneyInBoxesPerRoundToPlayerBox(moneyInBoxesPerRound: InternalPlayerBox[][]): PlayerBox[][] {
-    return moneyInBoxesPerRound.map((round) => round.map((playerBox) => ({
-      id: playerBox.playerId,
-      money: playerBox.moneyInBox
-    }))
+    return moneyInBoxesPerRound?.map((round) => 
+      round?.map((playerBox) => ({
+        id: playerBox.playerId,
+        money: playerBox.moneyInBox
+      }))
     );
   }
   mapMagicMoneyMachine(magicMoneyMachine: InternalMagicMoneyMachine | undefined, userId: string): MagicMoneyMachine | undefined {
@@ -849,7 +850,7 @@ export class Impl implements Methods<InternalState> {
       return Response.error('User is not the decision player');
     }
     const placeMoneyInPlayerBox = state?.medallionMajorityVote?.placeMoneyInPlayerBox(request.playerId, request.amount);
-    if(typeof placeMoneyInPlayerBox === 'string') {
+    if (typeof placeMoneyInPlayerBox === 'string') {
       return Response.error(placeMoneyInPlayerBox);
     }
     return Response.ok();
@@ -860,7 +861,7 @@ export class Impl implements Methods<InternalState> {
       return Response.error('User is not the decision player');
     }
     const removeMoneyFromPlayerBox = state?.medallionMajorityVote?.removeMoneyFromPlayerBox(request.playerId, request.amount);
-    if(typeof removeMoneyFromPlayerBox === 'string') {
+    if (typeof removeMoneyFromPlayerBox === 'string') {
       return Response.error(removeMoneyFromPlayerBox);
     }
     return Response.ok();
