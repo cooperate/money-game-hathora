@@ -279,7 +279,7 @@ export class Impl implements Methods<InternalState> {
         votesPerRound: playerVoting.votePerRound,
       })),
       round: medallionVote.round,
-      moneyInBoxesPerRound: this.mapMoneyInBoxesPerRoundToPlayerBox(medallionVote?.decisionPlayer?.moneyinBoxesPerRound),
+      moneyInBoxesPerRound: this.mapMoneyInBoxesPerRoundToPlayerBox(medallionVote?.decisionPlayer?.moneyInBoxesPerRound),
       moneyAllocation: medallionVote.moneyAllocation,
       lockedDecision: medallionVote?.decisionPlayer?.lockDeposit,
       phasingPlayer: this.mapPhasingPlayerToPhasingPlayerMedallionVote(medallionVote?.phasingPlayer)

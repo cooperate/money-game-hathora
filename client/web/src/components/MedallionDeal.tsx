@@ -42,15 +42,16 @@ const SelectionAreaDecision = ({ medallionVoteDecisionPlayer }: { medallionVoteD
 
     return (
         <div className='flex flex-col m-8 gap-4'>
-            <div className='flex flex-row'>
-                <span className='mb-2 text-lg font-bold'>Your Money {moneySvg()} {medallionVoteDecisionPlayer?.moneyAllocation}</span>
+            <div className='flex flex-row gap-2'>
+                <span className='mb-2 text-lg font-bold'>Your Money {moneySvg()}</span> 
+                <span className='mb-2 text-lg font-bold'>{medallionVoteDecisionPlayer?.moneyAllocation}</span>
                 <GameInfoModal title={'Medallion Majority Vote Rules'} text={'In this round the player with the most medallions (the decision player) is in charge of formulating a deal with other players (voter players) for the remaining money in the bank.  The player in the decision role is free to allocate as much money as they would like into each voter players box.  Each voter player will then observe the money in their box.  If the majority votes to approve the deal they have been given the money is distributed.  If the vote fails, a new round is started and the same process occurs again.  If a deal cannot be brokered over three rounds, no money is distributed.'} />
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-4">
                 <span className='mb-2 text-lg font-bold'>Deposit Money For Other Players To Make A Deal</span>
-                <div className='flex flex-wrap'>
+                <div className='flex flex-wrap gap-4'>
                     {medallionVoteDecisionPlayer?.votePlayers.map((player, index) => (
-                        <div key={index} className='flex flex-col'>
+                        <div key={index} className='flex flex-col gap-2 border-gray-200 rounded-lg dark:bg-gray-300 dark:border-gray-400 p-2'>
                             <div className='flex flex-row'>
                                 <input
                                     type="number"
@@ -63,7 +64,11 @@ const SelectionAreaDecision = ({ medallionVoteDecisionPlayer }: { medallionVoteD
                                 </button>
                             </div>
                             <div className={cardCss}>
-                                <div className={headerTextCss}>{nameAbbreviation(getUserName(player.id))}</div>
+                                <div className='flex flex-row gap-2'>
+                                    <div className={headerTextCss}>{nameAbbreviation(getUserName(player.id))}</div>
+                                    <span className="mb-2 text-lg font-bold text-slate-50">{moneySvg()}</span>
+                                    <span className="mb-2 text-lg font-bold text-slate-50">{medallionVoteDecisionPlayer?.moneyInBoxesPerRound[medallionVoteDecisionPlayer?.round]?.find((playerBox) => playerBox.id == player.id)?.money || 0}</span>
+                                </div>
                                 <div className="flex flex-row items-center justify-center">
                                     <div className='flex flex-row'>
                                         <input
@@ -83,7 +88,7 @@ const SelectionAreaDecision = ({ medallionVoteDecisionPlayer }: { medallionVoteD
                 </div>
                 <LockButton callbackToLock={() => lockDeposits()} lockText="Your Deal Has Been Locked" unlockText="Lock In Your Deal" isLocked={medallionVoteDecisionPlayer?.lockedDecision || false} />
             </div>
-        </div>
+        </div >
     )
 }
 const PlayerAreaDecision = ({ players }: { players: MedallionVotePlayersInfoPerspectiveDecision[] | undefined }) => {
@@ -100,7 +105,7 @@ const PlayerAreaDecision = ({ players }: { players: MedallionVotePlayersInfoPers
                     <div className="flex flex-col items-center">
 
                         <div className="flex flex-col items-center">
-                            Votes Per Round
+                            <span className="text-lg font-bold text-slate-50">Votes Per Round</span>
                         </div>
                         <div className="flex flex-row items-center">
                             {player.votesPerRound.map((vote, index) => (
@@ -155,22 +160,22 @@ const PlayerAreaVoter = ({ votePlayers, decisionPlayer, phasingPlayer }: { voteP
     return (
         <div className='flex flex-wrap m-8 gap-4'>
             {phasingPlayer === PhasingPlayerMedallionVote.VOTER ?
-            votePlayers?.map((player: MedallionVotePlayersInfoPerspectiveVote, index) => (
-                <div key={index} className={cardCss}>
-                    <div className="flex flex-col items-center">
-                        <div className={headerTextCss}>{nameAbbreviation(getUserName(player.id))}</div>
+                votePlayers?.map((player: MedallionVotePlayersInfoPerspectiveVote, index) => (
+                    <div key={index} className={cardCss}>
+                        <div className="flex flex-col items-center">
+                            <div className={headerTextCss}>{nameAbbreviation(getUserName(player.id))}</div>
+                        </div>
+                        <LockButtonNoInteraction isLocked={player.lockedVote} lockText="Has Locked Their Vote"
+                            unlockText="Has Not Locked Vote" />
                     </div>
-                    <LockButtonNoInteraction isLocked={player.lockedVote} lockText="Has Locked Their Vote"
-                        unlockText="Has Not Locked Vote" />
+                ))
+                :
+                <div className={cardCss}>
+                    <div className="flex flex-col items-center">
+                        <div className={headerTextCss}>{nameAbbreviation(getUserName(decisionPlayer?.id || ''))}</div>
+                        <LockButtonNoInteraction isLocked={decisionPlayer?.lockDeposit || false} lockText="Has Locked Their Deal In." unlockText="Has Not Locked Their Deal In." />
+                    </div>
                 </div>
-            ))
-            :
-            <div className={cardCss}>
-                <div className="flex flex-col items-center">
-                    <div className={headerTextCss}>{nameAbbreviation(getUserName(decisionPlayer?.id || ''))}</div>
-                    <LockButtonNoInteraction isLocked={decisionPlayer?.lockDeposit || false} lockText="Has Locked Their Deal In." unlockText="Has Not Locked Their Deal In." />
-                </div>
-            </div>
             }
         </div>
     )

@@ -24,7 +24,7 @@ export type InternalPlayerBox = {
 
 export class MedallionMajorityDecisionPlayer extends InternalPlayerInfo {
     public lockDeposit = false;
-    public moneyinBoxesPerRound: InternalPlayerBox[][] = [];
+    public moneyInBoxesPerRound: InternalPlayerBox[][] = [];
 
     constructor(id: string, money: number, medallions: number) {
         super(id);
@@ -84,7 +84,7 @@ export class InternalMedallionMajorityVote {
         //clear revealed paddles
         this.round++;
         //iterate over decisionPlayer moneyinBoxesPerRound
-        this.decisionPlayer.moneyinBoxesPerRound[this.round] = this.decisionPlayer.moneyinBoxesPerRound[this.round - 1];
+        this.decisionPlayer.moneyInBoxesPerRound[this.round] = this.decisionPlayer.moneyInBoxesPerRound[this.round - 1];
         //switch phasing players
         this.phasingPlayer = 'MEDALLION_PLAYER';
     }
@@ -102,16 +102,22 @@ export class InternalMedallionMajorityVote {
         if(this.phasingPlayer == 'VOTE_PLAYERS') {
             return undefined;
         }
-        //check if playerId already exists in moneyinBoxesPerRound
-        const playerBox = this.decisionPlayer.moneyinBoxesPerRound[this.round].find((playerBox) => playerBox.playerId === playerId);
         //if moneyAllocation is less than money, return early
         if(this.moneyAllocation < money) {
             return 'Not enough money in bank.';
         }
+        //check if playerId already exists in moneyinBoxesPerRound
+        const playerBox = this.decisionPlayer?.moneyInBoxesPerRound[this.round]?.find((playerBox) => playerBox.playerId === playerId);
         if(playerBox) {
             playerBox.moneyInBox += money;
         } else {
-            this.decisionPlayer.moneyinBoxesPerRound[this.round].push({playerId: playerId, moneyInBox: money});
+            //check if moneyinBoxesPerRound exists for this round
+            if(!this.decisionPlayer.moneyInBoxesPerRound[this.round]) {
+                this.decisionPlayer.moneyInBoxesPerRound[this.round] = [];
+                this.decisionPlayer.moneyInBoxesPerRound[this.round]?.push({playerId: playerId, moneyInBox: money});
+            } else {
+                this.decisionPlayer.moneyInBoxesPerRound[this.round]?.push({playerId: playerId, moneyInBox: money});
+            }
         }
         this.moneyAllocation -= money;
     }
@@ -130,7 +136,7 @@ export class InternalMedallionMajorityVote {
             return undefined;
         }
         //if playerid does not exist in moneyinBoxesPerRound, return early
-        const playerBox = this.decisionPlayer.moneyinBoxesPerRound[this.round].find((playerBox) => playerBox.playerId === playerId);
+        const playerBox = this.decisionPlayer?.moneyInBoxesPerRound[this.round]?.find((playerBox) => playerBox.playerId === playerId);
         if(!playerBox) {
             return 'Have not added money to box.';
         }
@@ -148,12 +154,12 @@ export class InternalMedallionMajorityVote {
         this.phasingPlayer = 'VOTE_PLAYERS';
         //iterate over players and set moneyInBoxPerRound
         this.playersVoting.forEach((player) => {
-            const playerBox = this.decisionPlayer.moneyinBoxesPerRound[this.round].find((playerBox) => playerBox.playerId === player.id);
+            const playerBox = this.decisionPlayer.moneyInBoxesPerRound[this.round].find((playerBox) => playerBox.playerId === player.id);
             if(playerBox) {
                 player.moneyInBoxPerRound[this.round] = playerBox.moneyInBox;
             } else {
                 //this players moneyInBoxesPerRound hasn't been set, create an entry for decision player
-                this.decisionPlayer.moneyinBoxesPerRound[this.round].push({playerId: player.id, moneyInBox: 0});
+                this.decisionPlayer.moneyInBoxesPerRound[this.round].push({playerId: player.id, moneyInBox: 0});
                 player.moneyInBoxPerRound[this.round] = 0;
             }
         });
