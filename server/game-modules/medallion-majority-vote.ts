@@ -75,18 +75,22 @@ export class InternalMedallionMajorityVote {
         return this.decisionPlayer;
     }
 
-    advanceRound(): void {
-        if (this.round === this.maxRounds) {
-            throw new Error("Maximum number of rounds reached");
+    advanceRound(): void | ServerError {
+        if (this.round === (this.maxRounds -1)) {
+            return "Maximum number of rounds reached. No deal reached!";
         }
+        this.round++;
         //iterate over players and reset values
         this.playersVoting.forEach((player) => player.resetValues());
+        //if moneyinBoxesPerRound does not exist for this round, create it
+        if(!this.decisionPlayer.moneyInBoxesPerRound[this.round]) {
+            this.decisionPlayer.moneyInBoxesPerRound[this.round] = [];
+        }
         //iterate over decisionPlayer moneyinBoxesPerRound
         this.decisionPlayer.moneyInBoxesPerRound[this.round] = this.decisionPlayer.moneyInBoxesPerRound[this.round - 1];
         this.decisionPlayer.resetValues();
         //switch phasing players
         this.phasingPlayer = 'MEDALLION_PLAYER';
-        this.round++;
     }
 
     placeMoneyInPlayerBox(playerId: string, money: number): ServerError | undefined {
@@ -154,10 +158,14 @@ export class InternalMedallionMajorityVote {
         this.phasingPlayer = 'VOTE_PLAYERS';
         //iterate over players and set moneyInBoxPerRound
         this.playersVoting.forEach((player) => {
-            const playerBox = this.decisionPlayer.moneyInBoxesPerRound[this.round].find((playerBox) => playerBox.playerId === player.id);
+            const playerBox = this.decisionPlayer?.moneyInBoxesPerRound[this.round]?.find((playerBox) => playerBox?.playerId === player.id);
             if(playerBox) {
                 player.moneyInBoxPerRound[this.round] = playerBox.moneyInBox;
             } else {
+                //if moneyInBoxPerRound is empty, create an entry for decision player
+                if(!this.decisionPlayer?.moneyInBoxesPerRound[this.round]) {
+                    this.decisionPlayer.moneyInBoxesPerRound[this.round] = [];
+                }
                 //this players moneyInBoxesPerRound hasn't been set, create an entry for decision player
                 this.decisionPlayer.moneyInBoxesPerRound[this.round].push({playerId: player.id, moneyInBox: 0});
                 player.moneyInBoxPerRound[this.round] = 0;

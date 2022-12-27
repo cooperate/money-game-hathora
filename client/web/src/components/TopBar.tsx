@@ -62,10 +62,14 @@ export default function TopBar() {
                     <span className="lg:pl-0 text-gray-700">{getGameNameById(playerState?.currentGame)}</span>
                     {playerState?.currentGame !== RoundGameModule.TRADING ?
                     <>
-                        <span className="hidden lg:block">|</span>
-                        <span className="lg:pl-0 text-gray-700 flex flex-row gap-2">
-                            <span>Round</span> {getGameRoundByActiveGame(playerState?.currentGame, playerState) + 1}
-                        </span>
+                        {playerState?.currentGame !== RoundGameModule.FINAL_RESULTS &&
+                        <>
+                            <span className="hidden lg:block">|</span>
+                            <span className="lg:pl-0 text-gray-700 flex flex-row gap-2">
+                                <span>Round</span> {getGameRoundByActiveGame(playerState?.currentGame, playerState) + 1}
+                            </span>
+                        </>
+                        }
                     </> :
                     <span>
                         <span className="lg:pl-0 text-gray-700 flex flex-row gap-2">

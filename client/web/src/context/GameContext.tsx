@@ -57,6 +57,8 @@ export const getGameNameById = (roundGameModule: RoundGameModule | undefined): s
       return "Trading";
     case RoundGameModule.MEDALLION_MAJORITY_VOTE:
       return "Medallion Majority Vote";
+    case RoundGameModule.FINAL_RESULTS:
+      return "Money Game Final Results";
     default: 
       return "Money Game";
   }
@@ -72,6 +74,10 @@ export const getGameRoundByActiveGame = (roundGameModule: RoundGameModule | unde
       return playerState?.magicMoneyMachine?.round || 0;
     case RoundGameModule.PICK_A_PRIZE:
       return playerState?.pickAPrize?.round || 0;
+    case RoundGameModule?.MEDALLION_MAJORITY_VOTE:
+      return playerState?.medallionVoteDecisionPlayer?.round || playerState?.medallionVoteVotePlayer?.round || 0;
+    case RoundGameModule?.FINAL_RESULTS:
+      return 0;
     default:
       return 0;
   }

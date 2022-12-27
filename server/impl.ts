@@ -162,12 +162,12 @@ export class Impl implements Methods<InternalState> {
     switch (randomGameModule) {
       case 'prize-draw':
         //create a prize draw game
-        state.prizeDrawGame = new InternalPrizeDraw(state.players, [100, 200, 300], [1, 2, 3]);
+        state.prizeDrawGame = new InternalPrizeDraw(state.players, this.issueBankAmountForPrizeDraw(Math.floor(state.bank / 7)), [1, 0, 2]);
         //set the round game module
         state.currentRoundGameModule = 'prize-draw';
         break;
       case 'lowest-unique-bid':
-        state.lowestUniqueBidGame = new InternalLowestUniqueBid(state.players, [20, 50, 100], [0, 1, 2]);
+        state.lowestUniqueBidGame = new InternalLowestUniqueBid(state.players, this.issueMultiplierAmountForLowestUniqueBid(state?.players?.length, state?.bank), [0, 1, 2]);
         state.currentRoundGameModule = 'lowest-unique-bid';
         break;
       case 'magic-money-machine':
@@ -184,6 +184,19 @@ export class Impl implements Methods<InternalState> {
     ctx.broadcastEvent(HathoraEventTypes.newRound, `New Game Round: ${randomGameModule}`);
   }
 
+  issueMultiplierAmountForLowestUniqueBid(amountOfPlayers: number, bankTotal: number) {
+    //given the bankTotal we should find 1/5 of the bank and find maxiumum multipliers to issue it
+    const amountToIssue = Math.floor(bankTotal / 5);
+    //issue 0.2, 0.3, 0.5
+    const totalAmountToIssueEachRound = [Math.floor(amountToIssue * 0.2), Math.floor(amountToIssue * 0.3), Math.floor(amountToIssue * 0.5)];  
+    //given the total values to issue, divide it by the amount of players, this gives us the maximum multiplier for our bank allocation
+    const maxMultiplier = totalAmountToIssueEachRound.map((amount) => Math.floor(amount / amountOfPlayers));
+    return maxMultiplier;
+  }
+  issueBankAmountForPrizeDraw(amountToIssue: number) {
+    //given the amount to issue, divide it by 10 and issue 20% in the first round, 30% in the second round and 50% in the third round
+    return [Math.floor(amountToIssue * 0.2), Math.floor(amountToIssue * 0.3), Math.floor(amountToIssue * 0.5)];
+  }
   startFinalMedallionRound(state: InternalState, ctx: Context): void {
     //check which player has the most medallions
     const playerWithMostMedallions = state.players?.reduce((prev, current) => (prev.medallions > current.medallions ? prev : current), state.players?.[0]);
@@ -256,6 +269,8 @@ export class Impl implements Methods<InternalState> {
         return RoundGameModule.TRADING;
       case 'medallion-majority-vote':
         return RoundGameModule.MEDALLION_MAJORITY_VOTE;
+      case 'final-results':
+        return RoundGameModule.FINAL_RESULTS;
       default:
         return undefined;
     }
@@ -321,7 +336,7 @@ export class Impl implements Methods<InternalState> {
   }
 
   mapMoneyInBoxesPerRoundToPlayerBox(moneyInBoxesPerRound: InternalPlayerBox[][]): PlayerBox[][] {
-    return moneyInBoxesPerRound?.map((round) => 
+    return moneyInBoxesPerRound?.map((round) =>
       round?.map((playerBox) => ({
         id: playerBox.playerId,
         money: playerBox.moneyInBox
@@ -879,7 +894,10 @@ export class Impl implements Methods<InternalState> {
     if (state?.medallionMajorityVote?.playersVoting.find((player) => player.id === userId) === undefined) {
       return Response.error('User is not the vote player');
     }
-    state?.medallionMajorityVote?.lockVote(userId);
+    const lockVote = state?.medallionMajorityVote?.lockVote(userId);
+    if (typeof lockVote === 'string') {
+      return Response.error(lockVote);
+    }
     //check if all votes are locked
     if (state?.medallionMajorityVote?.playersVoting.every((player) => player.lockVote)) {
       //if all votePerRound is true, then the deal is accepted, a payout occurs and the game ends
@@ -894,7 +912,11 @@ export class Impl implements Methods<InternalState> {
         this.internalStartRound(state, ctx);
       } else {
         //start a new round
-        state?.medallionMajorityVote?.advanceRound();
+        const advanceRound = state?.medallionMajorityVote?.advanceRound();
+        if (typeof advanceRound === 'string') {
+          this.internalStartRound(state, ctx);
+          return Response.error(advanceRound);
+        }
       }
     }
     return Response.ok();
@@ -944,31 +966,45 @@ function generatePrizes(playerCount: number, moneyForPrizes: number, totalMedall
     //iterate through prizeCountPerRound
     for (let j = 0; j < prizeCountPerRound; j++) {
       //if this is the last prize, make a 50/50 decision to add medallions or money
-      if (i === prizeCountPerRound - 1) {
-        if (Math.random() > 0.5) {
-          const medallionCount = Math.floor(Math.random() * totalMedallions);
-          //add medallions
+      if (j === prizeCountPerRound - 1) {
+        //if it's the last round and there are any medallions left, issue the medallions
+        if (totalMedallions > 0 && i === DEFAULT_ROUNDS - 1) {
           const prize: InternalPrize = {
             prizeType: 'medallions',
-            amount: medallionCount
-          };
+            amount: totalMedallions
+          }
           _prizes.push(prize);
-          totalMedallions -= medallionCount;
+          totalMedallions = 0;
         } else {
-          //get the last tier from the prizeTiersPerRound
-          const amount = prizeTiersPerRound(playerCount)[i][j] * moneyForPrizesPerRound[i];
-          const prize: InternalPrize = {
-            prizeType: 'money',
-            amount
-          };
-          _prizes.push(prize);
+          if (Math.random() > 0.5) {
+            let medallionCount = Math.floor(Math.random() * totalMedallions);
+            //if medalionCount is 0, add 1
+            if (medallionCount === 0) {
+              medallionCount = 1;
+            }
+            //add medallions
+            const prize: InternalPrize = {
+              prizeType: 'medallions',
+              amount: medallionCount
+            };
+            _prizes.push(prize);
+            totalMedallions -= medallionCount;
+          } else {
+            //get the last tier from the prizeTiersPerRound
+            const amount = prizeTiersPerRound(playerCount)[i][j] * moneyForPrizesPerRound[i];
+            const prize: InternalPrize = {
+              prizeType: 'money',
+              amount: Math.floor(amount)
+            };
+            _prizes.push(prize);
+          }
         }
       } else {
         //get the last tier from the prizeTiersPerRound
         const amount = prizeTiersPerRound(playerCount)[i][j] * moneyForPrizesPerRound[i];
         const prize: InternalPrize = {
           prizeType: 'money',
-          amount
+          amount: Math.floor(amount)
         };
         _prizes.push(prize);
       }
