@@ -189,12 +189,12 @@ export class Impl implements Methods<InternalState> {
     const playerWithMostMedallions = state.players.reduce((prev, current) => (prev.medallions > current.medallions ? prev : current));
     //get all the other players
     const votePlayers = state.players.filter((player) => player.id !== playerWithMostMedallions.id);
-    state.medallionMajorityVote = new InternalMedallionMajorityVote(votePlayers, playerWithMostMedallions, 3, state.bank);  
+    state.medallionMajorityVote = new InternalMedallionMajorityVote(votePlayers, playerWithMostMedallions, 3, state.bank);
     state.currentRoundGameModule = 'medallion-majority-vote';
     ctx.broadcastEvent(HathoraEventTypes.newRound, `New Game Round: medallion-majority-vote`);
   }
 
-  
+
   displayFinalResults(state: InternalState, ctx: Context): void {
     state.currentRoundGameModule = 'final-results';
     state.displayFinalResults = true;
@@ -204,6 +204,15 @@ export class Impl implements Methods<InternalState> {
    */
   //mapping internal server state to player state
   getUserState(state: InternalState, userId: UserId): PlayerState {
+    let playerIsDecisionPlayer: boolean;
+    //check which player has the most medallions
+    const playerWithMostMedallions = state?.players.reduce((prev, current) => (prev.medallions > current.medallions) ? prev : current);
+    //if the player with the most medallions is the current player, return the MedallionVoteDecisionPlayer
+    if (playerWithMostMedallions.id === userId) {
+      playerIsDecisionPlayer = true;
+    } else {
+      playerIsDecisionPlayer = false;
+    }
     return {
       self: state.players.find((player) => player.id === userId),
       players: this.mapToPlayerInfo(state.players),
@@ -217,7 +226,8 @@ export class Impl implements Methods<InternalState> {
       currentGame: this.mapToRoundGameModule(state.currentRoundGameModule),
       turnNumber: state.turnNumber,
       finalResults: state.displayFinalResults ? this.mapFinalResults(state.players) : undefined,
-      ...this.mapMedallionVote(state.medallionMajorityVote, userId, state.players)
+      medallionVoteDecisionPlayer: playerIsDecisionPlayer ? this.mapMedallionVoteDecisionPlayer(state.medallionMajorityVote, userId) : undefined,
+      medallionVoteVotePlayer: !playerIsDecisionPlayer ? this.mapMedallionVoteVotingPlayer(state.medallionMajorityVote, userId) : undefined,
     };
   }
   /*******
@@ -257,46 +267,47 @@ export class Impl implements Methods<InternalState> {
     }));
   }
 
-  mapMedallionVote(medallionVote: InternalMedallionMajorityVote | undefined, userId: string, players: InternalPlayerInfo[]): MedallionVoteDecisionPlayer | MedallionVoteVotePlayer | undefined {
+  mapMedallionVoteDecisionPlayer(medallionVote: InternalMedallionMajorityVote | undefined, userId: string): MedallionVoteDecisionPlayer | undefined {
     if (medallionVote === undefined) {
       return undefined;
     }
-    //check which player has the most medallions
-    const playerWithMostMedallions = players.reduce((prev, current) => (prev.medallions > current.medallions) ? prev : current);
-    //if the player with the most medallions is the current player, return the MedallionVoteDecisionPlayer
-    if (playerWithMostMedallions.id === userId) {
-      return {
-        votePlayers: medallionVote.playersVoting.map((playerVoting) => ({
-          id: playerVoting.id,
-          lockedVote: playerVoting.lockVote,
-          votesPerRound: playerVoting.votePerRound,
-        })),
-        round: medallionVote.round,
-        moneyInBoxesPerRound: this.mapMoneyInBoxesPerRoundToPlayerBox(medallionVote?.decisionPlayer?.moneyinBoxesPerRound),
-        moneyAllocation: medallionVote.moneyAllocation,
-        lockedDecision: medallionVote?.decisionPlayer?.lockDeposit,
-        phasingPlayer: this.mapPhasingPlayerToPhasingPlayerMedallionVote(medallionVote?.phasingPlayer)
-      }
-    } else //is a voting player
-    {
-      const selfVotePlayer = medallionVote.playersVoting.find((playerVoting) => playerVoting.id === userId);
-      return {
-        votePlayers: medallionVote.playersVoting.map((playerVoting) => ({
-          id: playerVoting.id,
-          lockedVote: playerVoting.lockVote
-        })),
-        decisionPlayer: {
-          id: playerWithMostMedallions.id,
-          lockDeposit: medallionVote?.decisionPlayer?.lockDeposit,
-        },
-        round: medallionVote.round,
-        votesPerRound: selfVotePlayer?.votePerRound || [],
-        moneyInBoxPerRound: selfVotePlayer?.moneyInBoxPerRound || [],
-        lockedVote: selfVotePlayer?.lockVote || false,
-        phasingPlayer: this.mapPhasingPlayerToPhasingPlayerMedallionVote(medallionVote?.phasingPlayer)
-      }
+
+    return {
+      votePlayers: medallionVote.playersVoting.map((playerVoting) => ({
+        id: playerVoting.id,
+        lockedVote: playerVoting.lockVote,
+        votesPerRound: playerVoting.votePerRound,
+      })),
+      round: medallionVote.round,
+      moneyInBoxesPerRound: this.mapMoneyInBoxesPerRoundToPlayerBox(medallionVote?.decisionPlayer?.moneyinBoxesPerRound),
+      moneyAllocation: medallionVote.moneyAllocation,
+      lockedDecision: medallionVote?.decisionPlayer?.lockDeposit,
+      phasingPlayer: this.mapPhasingPlayerToPhasingPlayerMedallionVote(medallionVote?.phasingPlayer)
     }
   }
+
+  mapMedallionVoteVotingPlayer(medallionVote: InternalMedallionMajorityVote | undefined, userId: string): MedallionVoteVotePlayer | undefined {
+    if (medallionVote === undefined) {
+      return undefined;
+    }
+    const selfVotePlayer = medallionVote.playersVoting.find((playerVoting) => playerVoting.id === userId);
+    return {
+      votePlayers: medallionVote.playersVoting.map((playerVoting) => ({
+        id: playerVoting.id,
+        lockedVote: playerVoting.lockVote
+      })),
+      decisionPlayer: {
+        id: medallionVote?.decisionPlayer.id,
+        lockDeposit: medallionVote?.decisionPlayer?.lockDeposit,
+      },
+      round: medallionVote.round,
+      votesPerRound: selfVotePlayer?.votePerRound || [],
+      moneyInBoxPerRound: selfVotePlayer?.moneyInBoxPerRound || [],
+      lockedVote: selfVotePlayer?.lockVote || false,
+      phasingPlayer: this.mapPhasingPlayerToPhasingPlayerMedallionVote(medallionVote?.phasingPlayer)
+    }
+  }
+
   mapPhasingPlayerToPhasingPlayerMedallionVote(phasingPlayer: PhasingPlayer | undefined): PhasingPlayerMedallionVote | undefined {
     if (phasingPlayer === undefined) {
       return undefined;
@@ -809,12 +820,14 @@ export class Impl implements Methods<InternalState> {
     const player = state?.players?.find((player) => player.id === userId);
     player?.lockTrading();
     //check if all players locked trading
-    if (state.players.every((player) => player.lockedTrade) && state?.turnNumber < (TOTAL_TURNS - 1)) {
-      ctx.broadcastEvent(HathoraEventTypes.tradingAllPlayersLocked, 'All Players Are Finished Trading, Next Game Starting');
-      this.selectARandomGameModule(state, ctx);
-    } else {
-      ctx.broadcastEvent(HathoraEventTypes.tradingAllPlayersLocked, 'All Players Are Finished Trading, Next Game Starting');
-      this.startFinalMedallionRound(state, ctx);
+    if (state.players.every((player) => player.lockedTrade)) {
+      if (state?.turnNumber < (TOTAL_TURNS)) {
+        ctx.broadcastEvent(HathoraEventTypes.tradingAllPlayersLocked, 'All Players Are Finished Trading, Next Game Starting');
+        this.selectARandomGameModule(state, ctx);
+      } else {
+        ctx.broadcastEvent(HathoraEventTypes.tradingAllPlayersLocked, 'All Players Are Finished Trading, Next Game Starting');
+        this.startFinalMedallionRound(state, ctx);
+      }
     }
     return Response.ok();
   }
@@ -827,7 +840,7 @@ export class Impl implements Methods<InternalState> {
     if (state?.medallionMajorityVote?.decisionPlayer.id !== userId) {
       return Response.error('User is not the decision player');
     }
-    state?.medallionMajorityVote?.lockDeposits();  
+    state?.medallionMajorityVote?.lockDeposits();
     return Response.ok();
   }
   putMoneyInBoxDecision(state: InternalState, userId: string, ctx: Context, request: IPutMoneyInBoxDecisionRequest): Response {
@@ -835,7 +848,7 @@ export class Impl implements Methods<InternalState> {
     if (state?.medallionMajorityVote?.decisionPlayer.id !== userId) {
       return Response.error('User is not the decision player');
     }
-    state?.medallionMajorityVote?.placeMoneyInPlayerBox(request.playerId, request.amount);  
+    state?.medallionMajorityVote?.placeMoneyInPlayerBox(request.playerId, request.amount);
     return Response.ok();
   }
   removeMoneyFromBoxDecision(state: InternalState, userId: string, ctx: Context, request: IRemoveMoneyFromBoxDecisionRequest): Response {

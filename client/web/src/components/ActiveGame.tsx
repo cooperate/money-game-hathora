@@ -12,6 +12,7 @@ import LowestUniqueBid from "./LowestUniqueBid";
 import MagicMoneyMachine from "./MagicMoneyMachine";
 import TransferMoneyComponent from "./TransferMoney";
 import FinalResultsComponent from "./FinalResults";
+import MedallionDealComponent from "./MedallionDeal";
 
 const PlayerBoard = styled.div`
   height: 100%;
@@ -65,6 +66,10 @@ export default function ActiveGame() {
       case RoundGameModule.TRADING:
         return (
           <TransferMoneyComponent />
+        );
+      case RoundGameModule.MEDALLION_MAJORITY_VOTE:
+        return (
+          <MedallionDealComponent />
         );
       case RoundGameModule.FINAL_RESULTS:
         return (
