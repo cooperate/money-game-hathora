@@ -125,22 +125,29 @@ const PlayerAreaDecision = ({ players }: { players: MedallionVotePlayersInfoPers
 
 const SelectionAreaVoter = ({ medallionVoteVotePlayer }: { medallionVoteVotePlayer: MedallionVoteVotePlayer | undefined }) => {
     const { lockVote, submitVote } = useHathoraContext();
+    const cardCssVoteButton = 'p-1 bg-white border border-gray-200 rounded-lg shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700';
+    
     return (
-        <div className='flex flex-col'>
+        <div className='flex flex-col gap-4'>
             {medallionVoteVotePlayer?.phasingPlayer === PhasingPlayerMedallionVote.VOTER ?
                 <>
                     <span className='mb-2 text-lg font-bold'>Your Deal For This Round</span>
-                    <div className='flex'>
-                        <span>{moneySvg()} {medallionVoteVotePlayer?.moneyInBoxPerRound[medallionVoteVotePlayer?.round]}</span>
+                    <div className='flex flex-row'>
+                        <span>{moneySvg()}</span> 
+                        <span className="text-lg font-bold">{medallionVoteVotePlayer?.moneyInBoxPerRound[medallionVoteVotePlayer?.round]}</span>
                     </div>
                     <span className='mb-2 text-lg font-bold'>Vote For This Deal</span>
-                    <div className='flex flex-row'>
-                        <button onClick={() => submitVote(true)} className='bg-green-500 hover:bg-green-900 text-white font-bold py-2 px-4 rounded'>
-                            {checkMarkSvg()}
-                        </button>
-                        <button onClick={() => submitVote(false)} className='bg-red-500 hover:bg-red-900 text-white font-bold py-2 px-4 rounded'>
-                            {xMarkSvg()}
-                        </button>
+                    <div className='flex flex-row justify-center gap-4'>
+                        <div className={`flex flex-col items-center ${medallionVoteVotePlayer?.votesPerRound[medallionVoteVotePlayer?.round] == true && cardCssVoteButton}`}>
+                            <button onClick={() => submitVote(true)} className='bg-green-500 hover:bg-green-900 text-white font-bold py-2 px-4 rounded'>
+                                {checkMarkSvg()}
+                            </button>
+                        </div>
+                        <div className={`flex flex-col items-center ${medallionVoteVotePlayer?.votesPerRound[medallionVoteVotePlayer?.round] == false && cardCssVoteButton}`}>
+                            <button onClick={() => submitVote(false)} className='bg-red-500 hover:bg-red-900 text-white font-bold py-2 px-4 rounded'>
+                                {xMarkSvg()}
+                            </button>
+                        </div>
                     </div>
                     <LockButton callbackToLock={() => lockVote()} isLocked={medallionVoteVotePlayer?.lockedVote} lockText="Lock Your Vote" unlockText="Unlock Your Vote" />
                 </>
