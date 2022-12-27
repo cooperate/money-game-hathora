@@ -14,6 +14,7 @@ types:
     - PICK_A_PRIZE
     - TRADING
     - MEDALLION_MAJORITY_VOTE
+    - FINAL_RESULTS
   PrizeType:
     - MONEY
     - MEDALLION
@@ -44,6 +45,10 @@ types:
     medallionVoteDecisionPlayer: MedallionVoteDecisionPlayer? # for more complicated assymetric state, should probably go towards an entirely different playerstate object, for this one use case nesting is find
     # OR dependening on which player has the most medallions
     medallionVoteVotePlayer: MedallionVoteVotePlayer?
+    finalResults: PlayerScore[]?
+  PlayerScore:
+    id: UserId
+    score: int
   Trading: 
     lockedTrade: boolean
   PlayerBox:

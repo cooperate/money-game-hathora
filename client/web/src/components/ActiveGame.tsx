@@ -11,6 +11,7 @@ import PrizeDraw from "./PrizeDraw";
 import LowestUniqueBid from "./LowestUniqueBid";
 import MagicMoneyMachine from "./MagicMoneyMachine";
 import TransferMoneyComponent from "./TransferMoney";
+import FinalResultsComponent from "./FinalResults";
 
 const PlayerBoard = styled.div`
   height: 100%;
@@ -64,6 +65,10 @@ export default function ActiveGame() {
       case RoundGameModule.TRADING:
         return (
           <TransferMoneyComponent />
+        );
+      case RoundGameModule.FINAL_RESULTS:
+        return (
+          <FinalResultsComponent />
         );
     }
   }

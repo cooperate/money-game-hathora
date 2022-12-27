@@ -35,7 +35,8 @@ import {
   ISubmitVoteRequest,
   ILockVoteRequest,
   ILockDepositsRequest,
-  PhasingPlayerMedallionVote
+  PhasingPlayerMedallionVote,
+  PlayerScore
 } from "../api/types";
 import { InternalPlayerInfo } from "./models/player";
 import { InternalPrizeDraw, PrizeDrawPlayer } from "./game-modules/prize-draw";
@@ -44,7 +45,7 @@ import { InternalMagicMoneyMachine, MagicMoneyMachinePlayer } from "./game-modul
 import { InternalPickAPrize, PickAPrizePlayer, InternalPrize, InternalPrizeType } from "./game-modules/pick-a-prize";
 import { InternalMedallionMajorityVote, InternalPlayerBox, PhasingPlayer } from "./game-modules/medallion-majority-vote";
 
-const TOTAL_TURNS = 4;
+const TOTAL_TURNS = 5;
 
 export type ServerError = string;
 type GameStatus = 'waiting' | 'in-progress' | 'finished';
@@ -63,9 +64,10 @@ type InternalState = {
   turnNumber: number;
   gameStatus: GameStatus;
   gamesPlayed: GameModule[];
+  displayFinalResults: boolean;
 };
 
-type GameModule = 'prize-draw' | 'lowest-unique-bid' | 'magic-money-machine' | 'pick-a-prize' | 'medallion-majority-vote' | 'trading';
+type GameModule = 'prize-draw' | 'lowest-unique-bid' | 'magic-money-machine' | 'pick-a-prize' | 'medallion-majority-vote' | 'trading' | 'final-results';
 const DEFAULT_ROUNDS = 3;
 export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
@@ -84,6 +86,7 @@ export class Impl implements Methods<InternalState> {
       turnNumber: 0,
       gameStatus: 'waiting',
       gamesPlayed: [],
+      displayFinalResults: false
     };
   }
   joinGame(state: InternalState, userId: UserId): Response {
@@ -120,6 +123,7 @@ export class Impl implements Methods<InternalState> {
     if (state.turnNumber > TOTAL_TURNS) {
       ctx.broadcastEvent(HathoraEventTypes.gameEnded, `Game Ended`);
       state.gameStatus = 'finished';
+      this.displayFinalResults(state, ctx);
       return;
     }
     //add the last game to the games played array
@@ -189,6 +193,12 @@ export class Impl implements Methods<InternalState> {
     state.currentRoundGameModule = 'medallion-majority-vote';
     ctx.broadcastEvent(HathoraEventTypes.newRound, `New Game Round: medallion-majority-vote`);
   }
+
+  
+  displayFinalResults(state: InternalState, ctx: Context): void {
+    state.currentRoundGameModule = 'final-results';
+    state.displayFinalResults = true;
+  }
   /****
    * MAP TO USER STATE
    */
@@ -206,6 +216,7 @@ export class Impl implements Methods<InternalState> {
       magicMoneyMachine: this.mapMagicMoneyMachine(state.magicMoneyMachineGame, userId),
       currentGame: this.mapToRoundGameModule(state.currentRoundGameModule),
       turnNumber: state.turnNumber,
+      finalResults: state.displayFinalResults ? this.mapFinalResults(state.players) : undefined,
       ...this.mapMedallionVote(state.medallionMajorityVote, userId, state.players)
     };
   }
@@ -238,6 +249,12 @@ export class Impl implements Methods<InternalState> {
       default:
         return undefined;
     }
+  }
+  mapFinalResults(players: InternalPlayerInfo[]): PlayerScore[] {
+    return players.map((player) => ({
+      id: player.id,
+      score: player.money,
+    }));
   }
 
   mapMedallionVote(medallionVote: InternalMedallionMajorityVote | undefined, userId: string, players: InternalPlayerInfo[]): MedallionVoteDecisionPlayer | MedallionVoteVotePlayer | undefined {
@@ -792,7 +809,7 @@ export class Impl implements Methods<InternalState> {
     const player = state?.players?.find((player) => player.id === userId);
     player?.lockTrading();
     //check if all players locked trading
-    if (state.players.every((player) => player.lockedTrade) && state?.turnNumber < 4) {
+    if (state.players.every((player) => player.lockedTrade) && state?.turnNumber < (TOTAL_TURNS - 1)) {
       ctx.broadcastEvent(HathoraEventTypes.tradingAllPlayersLocked, 'All Players Are Finished Trading, Next Game Starting');
       this.selectARandomGameModule(state, ctx);
     } else {
@@ -843,6 +860,23 @@ export class Impl implements Methods<InternalState> {
       return Response.error('User is not the vote player');
     }
     state?.medallionMajorityVote?.lockVote(userId);
+    //check if all votes are locked
+    if (state?.medallionMajorityVote?.playersVoting.every((player) => player.lockVote)) {
+      //if all votePerRound is true, then the deal is accepted, a payout occurs and the game ends
+      if (state?.medallionMajorityVote?.playersVoting.every((player) => player.votePerRound[state?.medallionMajorityVote?.round || 0])) {
+        //payout
+        state?.medallionMajorityVote?.playersVoting.forEach((player) => {
+          //transfer money from bank to player
+          this.transferMoneyFromBankToPlayer(state, player.id, player.moneyInBoxPerRound[state?.medallionMajorityVote?.round || 0], ctx);
+        });
+        //transfer money from bank to player
+        this.transferMoneyFromBankToPlayer(state, state?.medallionMajorityVote?.decisionPlayer.id, state?.medallionMajorityVote?.moneyAllocation, ctx);
+        this.internalStartRound(state, ctx);
+      } else {
+        //start a new round
+        state?.medallionMajorityVote?.advanceRound();
+      }
+    }
     return Response.ok();
   }
 }

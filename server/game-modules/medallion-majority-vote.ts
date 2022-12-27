@@ -145,7 +145,7 @@ export class InternalMedallionMajorityVote {
     lockDeposits(): void {
         this.decisionPlayer.lockDeposit = true;
         //switch phasing players
-        this.phasingPlayer = 'OTHER_PLAYERS';
+        this.phasingPlayer = 'VOTE_PLAYERS';
         //iterate over players and set moneyInBoxPerRound
         this.playersVoting.forEach((player) => {
             const playerBox = this.decisionPlayer.moneyinBoxesPerRound[this.round].find((playerBox) => playerBox.playerId === player.id);
