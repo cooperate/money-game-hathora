@@ -783,19 +783,44 @@ export class Impl implements Methods<InternalState> {
    * Medallion Majority Vote
    */
   lockDecision(state: InternalState, userId: string, ctx: Context, request: ILockDecisionRequest): Response {
-      return Response.ok();
+    //if userid is not the medallion decision player, return
+    if (state?.medallionMajorityVote?.decisionPlayer.id !== userId) {
+      return Response.error('User is not the decision player');
+    }
+    state?.medallionMajorityVote?.lockDeposits();  
+    return Response.ok();
   }
   putMoneyInBoxDecision(state: InternalState, userId: string, ctx: Context, request: IPutMoneyInBoxDecisionRequest): Response {
-      return Response.ok();
+    //if userid is not the medallion decision player, return
+    if (state?.medallionMajorityVote?.decisionPlayer.id !== userId) {
+      return Response.error('User is not the decision player');
+    }
+    state?.medallionMajorityVote?.placeMoneyInPlayerBox(request.playerId, request.amount);  
+    return Response.ok();
   }
   removeMoneyFromBoxDecision(state: InternalState, userId: string, ctx: Context, request: IRemoveMoneyFromBoxDecisionRequest): Response {
-      return Response.ok();
+    //if userid is not the medallion decision player, return
+    if (state?.medallionMajorityVote?.decisionPlayer.id !== userId) {
+      return Response.error('User is not the decision player');
+    }
+    state?.medallionMajorityVote?.removeMoneyFromPlayerBox(request.playerId, request.amount);
+    return Response.ok();
   }
   submitVote(state: InternalState, userId: string, ctx: Context, request: ISubmitVoteRequest): Response {
-      return Response.ok();
+    //if userid is not the medallion vote player, return
+    if (state?.medallionMajorityVote?.playersVoting.find((player) => player.id === userId) === undefined) {
+      return Response.error('User is not the vote player');
+    }
+    state?.medallionMajorityVote?.submitVote(userId, request.vote);
+    return Response.ok();
   }
   lockVote(state: InternalState, userId: string, ctx: Context, request: ILockVoteRequest): Response {
-      return Response.ok();
+    //if userid is not the medallion vote player, return
+    if (state?.medallionMajorityVote?.playersVoting.find((player) => player.id === userId) === undefined) {
+      return Response.error('User is not the vote player');
+    }
+    state?.medallionMajorityVote?.lockVote(userId);
+    return Response.ok();
   }
 }
 

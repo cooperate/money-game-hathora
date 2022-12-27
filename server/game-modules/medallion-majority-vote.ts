@@ -151,6 +151,10 @@ export class InternalMedallionMajorityVote {
             const playerBox = this.decisionPlayer.moneyinBoxesPerRound[this.round].find((playerBox) => playerBox.playerId === player.id);
             if(playerBox) {
                 player.moneyInBoxPerRound[this.round] = playerBox.moneyInBox;
+            } else {
+                //this players moneyInBoxesPerRound hasn't been set, create an entry for decision player
+                this.decisionPlayer.moneyinBoxesPerRound[this.round].push({playerId: player.id, moneyInBox: 0});
+                player.moneyInBoxPerRound[this.round] = 0;
             }
         });
     }
@@ -161,7 +165,7 @@ export class InternalMedallionMajorityVote {
             throw new Error("Player not found");
         }
         if (player.lockVote) {
-            throw new Error("Player has already locked paddle");
+            throw new Error("Player has already locked vote");
         }
         player.votePerRound[this.round] = vote;
     }
