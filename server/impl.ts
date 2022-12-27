@@ -30,18 +30,19 @@ import {
   MedallionVoteDecisionPlayer,
   MedallionVoteVotePlayer,
   PlayerBox,
-  ILockDecisionRequest,
   IPutMoneyInBoxDecisionRequest,
   IRemoveMoneyFromBoxDecisionRequest,
   ISubmitVoteRequest,
-  ILockVoteRequest
+  ILockVoteRequest,
+  ILockDepositsRequest,
+  PhasingPlayerMedallionVote
 } from "../api/types";
 import { InternalPlayerInfo } from "./models/player";
 import { InternalPrizeDraw, PrizeDrawPlayer } from "./game-modules/prize-draw";
 import { InternalLowestUniqueBid, LowestUniqueBidPlayer } from "./game-modules/lowest-unique-bid";
 import { InternalMagicMoneyMachine, MagicMoneyMachinePlayer } from "./game-modules/magic-money-machine";
 import { InternalPickAPrize, PickAPrizePlayer, InternalPrize, InternalPrizeType } from "./game-modules/pick-a-prize";
-import { InternalMedallionMajorityVote, InternalPlayerBox } from "./game-modules/medallion-majority-vote";
+import { InternalMedallionMajorityVote, InternalPlayerBox, PhasingPlayer } from "./game-modules/medallion-majority-vote";
 
 const TOTAL_TURNS = 4;
 
@@ -256,7 +257,8 @@ export class Impl implements Methods<InternalState> {
         round: medallionVote.round,
         moneyInBoxesPerRound: this.mapMoneyInBoxesPerRoundToPlayerBox(medallionVote?.decisionPlayer?.moneyinBoxesPerRound),
         moneyAllocation: medallionVote.moneyAllocation,
-        lockedDecision: medallionVote?.decisionPlayer?.lockDeposit
+        lockedDecision: medallionVote?.decisionPlayer?.lockDeposit,
+        phasingPlayer: this.mapPhasingPlayerToPhasingPlayerMedallionVote(medallionVote?.phasingPlayer)
       }
     } else //is a voting player
     {
@@ -273,8 +275,20 @@ export class Impl implements Methods<InternalState> {
         round: medallionVote.round,
         votesPerRound: selfVotePlayer?.votePerRound || [],
         moneyInBoxPerRound: selfVotePlayer?.moneyInBoxPerRound || [],
-        lockedVote: selfVotePlayer?.lockVote || false
+        lockedVote: selfVotePlayer?.lockVote || false,
+        phasingPlayer: this.mapPhasingPlayerToPhasingPlayerMedallionVote(medallionVote?.phasingPlayer)
       }
+    }
+  }
+  mapPhasingPlayerToPhasingPlayerMedallionVote(phasingPlayer: PhasingPlayer | undefined): PhasingPlayerMedallionVote | undefined {
+    if (phasingPlayer === undefined) {
+      return undefined;
+    }
+    switch (phasingPlayer) {
+      case 'MEDALLION_PLAYER':
+        return PhasingPlayerMedallionVote.DECISION;
+      case 'VOTE_PLAYERS':
+        return PhasingPlayerMedallionVote.VOTER;
     }
   }
 
@@ -791,7 +805,7 @@ export class Impl implements Methods<InternalState> {
   /*******
    * Medallion Majority Vote
    */
-  lockDecision(state: InternalState, userId: string, ctx: Context, request: ILockDecisionRequest): Response {
+  lockDeposits(state: InternalState, userId: string, ctx: Context, request: ILockDepositsRequest): Response {
     //if userid is not the medallion decision player, return
     if (state?.medallionMajorityVote?.decisionPlayer.id !== userId) {
       return Response.error('User is not the decision player');

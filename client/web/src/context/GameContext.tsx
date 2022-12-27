@@ -35,6 +35,11 @@ interface GameContext {
   lockMoney: () => Promise<void>;
   lockTrading: () => Promise<void>;
   transferMoney: (amount: number, playerIdToSendTo: string) => Promise<void>;
+  lockDeposits: () => Promise<void>;
+  putMoneyInBoxDecision: (playerId: string, amount: number) => Promise<void>;
+  removeMoneyFromBoxDecision: (playerId: string, amount: number) => Promise<void>;
+  submitVote: (vote: boolean) => Promise<void>;
+  lockVote : () => Promise<void>; 
 }
 
 export const getGameNameById = (roundGameModule: RoundGameModule | undefined): string => {
@@ -50,6 +55,8 @@ export const getGameNameById = (roundGameModule: RoundGameModule | undefined): s
       return "Pick a Prize";
     case RoundGameModule.TRADING:
       return "Trading";
+    case RoundGameModule.MEDALLION_MAJORITY_VOTE:
+      return "Medallion Majority Vote";
     default: 
       return "Money Game";
   }
@@ -267,6 +274,36 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
     }
   }, [connection]);
 
+  const lockDeposits = useCallback(async () => {
+    if (connection) {
+      await handleResponse(connection.lockDeposits({}));
+    }
+  }, [connection]);
+
+  const putMoneyInBoxDecision = useCallback(async (playerId: string, amount: number) => {
+    if (connection) {
+      await handleResponse(connection.putMoneyInBoxDecision({ playerId, amount }));
+    }
+  }, [connection]);
+
+  const removeMoneyFromBoxDecision = useCallback(async (playerId: string, amount: number) => {
+    if (connection) {
+      await handleResponse(connection.removeMoneyFromBoxDecision({ playerId, amount }));
+    }
+  }, [connection]);
+
+  const submitVote = useCallback(async (vote: boolean) => {
+    if (connection) {
+      await handleResponse(connection.submitVote({ vote }));
+    }
+  }, [connection]);
+
+  const lockVote = useCallback(async () => {
+    if (connection) {
+      await handleResponse(connection.lockVote({}));
+    }
+  }, [connection]);
+
   useEffect(() => {
     if (connectionError) {
       toast.error(connectionError?.message);
@@ -335,7 +372,12 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
         removeMoneyFromBox,
         lockMoney,
         lockTrading,
-        transferMoney
+        transferMoney,
+        lockDeposits,
+        putMoneyInBoxDecision,
+        removeMoneyFromBoxDecision,
+        submitVote,
+        lockVote,
       }}
     >
       {children}

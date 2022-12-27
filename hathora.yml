@@ -17,6 +17,9 @@ types:
   PrizeType:
     - MONEY
     - MEDALLION
+  PhasingPlayerMedallionVote:
+    - DECISION
+    - VOTER
   PlayerSelf:
     id: UserId
     money: int
@@ -59,6 +62,7 @@ types:
     votesPerRound: boolean[]
     moneyInBoxPerRound: int[]
     lockedVote: boolean
+    phasingPlayer: PhasingPlayerMedallionVote?
   MedallionVotePlayersInfoPerspectiveDecision:
     id: UserId
     lockedVote: boolean
@@ -69,6 +73,7 @@ types:
     moneyInBoxesPerRound: PlayerBox[][]
     moneyAllocation: int
     lockedDecision: boolean
+    phasingPlayer: PhasingPlayerMedallionVote?
   PrizeDraw:
     players: PrizeDrawPlayers[]
     round: int
@@ -174,7 +179,7 @@ methods:
   #Trading
   lockTrading:
   #Medallion Majority Vote
-  lockDecision:
+  lockDeposits:
   putMoneyInBoxDecision:
     playerId: UserId
     amount: int

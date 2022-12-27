@@ -37,7 +37,7 @@ export class MedallionMajorityDecisionPlayer extends InternalPlayerInfo {
     }
 }
 
-type PhasingPlayer = 'MEDALLION_PLAYER' | 'OTHER_PLAYERS';
+export type PhasingPlayer = 'MEDALLION_PLAYER' | 'VOTE_PLAYERS';
 
 export class InternalMedallionMajorityVote {
     public round = 0;
@@ -99,7 +99,7 @@ export class InternalMedallionMajorityVote {
             return undefined;
         }
         //if phasing player is not the medallion player, return early
-        if(this.phasingPlayer == 'OTHER_PLAYERS') {
+        if(this.phasingPlayer == 'VOTE_PLAYERS') {
             return undefined;
         }
         //check if playerId already exists in moneyinBoxesPerRound
@@ -126,7 +126,7 @@ export class InternalMedallionMajorityVote {
             return undefined;
         }
         //if phasing player is not the medallion player, return early
-        if(this.phasingPlayer == 'OTHER_PLAYERS') {
+        if(this.phasingPlayer == 'VOTE_PLAYERS') {
             return undefined;
         }
         //if playerid does not exist in moneyinBoxesPerRound, return early
