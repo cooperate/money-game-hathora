@@ -192,7 +192,7 @@ export class InternalMedallionMajorityVote {
         player.votePerRound[this.round] = vote;
     }
 
-    lockVote(playerId: string): string | undefined {
+    lockVote(playerId: string): ServerError | undefined {
         const player = this.playersVoting.find((player) => player.id === playerId);
         if (!player) {
             //throw new Error("Player not found");
