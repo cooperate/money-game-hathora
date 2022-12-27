@@ -16,8 +16,9 @@ interface PlayersMoney {
     amount: number;
 }
 const SelectionArea = ({ players }: { players: PlayerInfo[] | undefined }) => {
-    const { getUserName, transferMoney } = useHathoraContext();
+    const { getUserName, transferMoney, transferMedallions, playerState } = useHathoraContext();
     const [moneyToSend, setMoneyToSend] = useState<PlayersMoney[]>([]);
+    const [medallionsToSend, setMedallionsToSend] = useState<PlayersMoney[]>([]);
     const cardCss = 'block max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700';
     const headerTextCss = 'mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white';
 
@@ -32,10 +33,29 @@ const SelectionArea = ({ players }: { players: PlayerInfo[] | undefined }) => {
         }
     }
 
+    const componentEnterAmountMedallion = (playerId: string, amount: number) => {
+        //setMedallionsToSend replace prevId with new amount
+        const prevId = medallionsToSend.find((player) => player.playerId === playerId);
+        if (prevId) {
+            const newMedallionsToSend = medallionsToSend.filter((player) => player.playerId !== playerId);
+            setMedallionsToSend([...newMedallionsToSend, { playerId, amount }]);
+        } else {
+            setMedallionsToSend([...medallionsToSend, { playerId, amount }]);
+        }
+    }
+
+
     const transferMoneyComponent = (playerId: string) => {
         const playerMoney = moneyToSend.find((player) => player.playerId === playerId);
         if (playerMoney) {
             transferMoney(playerMoney.amount, playerId);
+        }
+    }
+
+    const transferMedallionsComponent = (playerId: string) => {
+        const playerMedallions = medallionsToSend.find((player) => player.playerId === playerId);
+        if (playerMedallions) {
+            transferMedallions(playerMedallions.amount, playerId);
         }
     }
 
@@ -55,9 +75,22 @@ const SelectionArea = ({ players }: { players: PlayerInfo[] | undefined }) => {
                                 className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
                             />
                             <button disabled={moneyToSend.find(playersMoney => playersMoney.playerId == player.id)?.amount ? false : true} onClick={() => transferMoneyComponent(player.id)} className={`block shadow-md ${moneyToSend.find(playersMoney => playersMoney.playerId == player.id)?.amount ? 'bg-green-500 hover:bg-green-900' : 'bg-slate-500'} rounded p-2 font-semibold text-white text-center h-full`}>
-                                    Send Money
+                                Send Money
                             </button>
                         </div>
+                        {playerState?.turnNumber == 5 &&
+                            <div className="flex flex-row items-center justify-center">
+                                <input
+                                    type="number"
+                                    onChange={(e) => componentEnterAmountMedallion(player.id, parseFloat(e.target.value))}
+                                    placeholder="Enter An Amount"
+                                    className="w-full flex-1 px-5 shadow py-3 border placeholder-gray-500 border-gray-300 rounded-l md:rounder-r-0 md:mb-0 mb-5 in-range:border-green-500"
+                                />
+                                <button disabled={medallionsToSend.find(playersMedallions => playersMedallions.playerId == player.id)?.amount ? false : true} onClick={() => transferMedallionsComponent(player.id)} className={`block shadow-md ${medallionsToSend.find(playersMedallions => playersMedallions.playerId == player.id)?.amount ? 'bg-green-500 hover:bg-green-900' : 'bg-slate-500'} rounded p-2 font-semibold text-white text-center h-full`}>
+                                    Send Money
+                                </button>
+                            </div>
+                        }
                         <LockButtonNoInteraction isLocked={player?.lockedTrade} lockText={"Has finished trading."} unlockText={"Still Trading."} />
                     </div>
                 ))}

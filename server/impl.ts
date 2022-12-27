@@ -36,7 +36,8 @@ import {
   ILockVoteRequest,
   ILockDepositsRequest,
   PhasingPlayerMedallionVote,
-  PlayerScore
+  PlayerScore,
+  ITransferMedallionRequest
 } from "../api/types";
 import { InternalPlayerInfo } from "./models/player";
 import { InternalPrizeDraw, PrizeDrawPlayer } from "./game-modules/prize-draw";
@@ -482,6 +483,23 @@ export class Impl implements Methods<InternalState> {
     state.players.find((player) => player.id === request.playerIdToSendTo)!.money += request.amount;
     if (request?.amount > 0) {
       ctx.sendEvent(HathoraEventTypes.moneyTransfer, `You were just transferred $${request?.amount}!`, request?.playerIdToSendTo);
+    }
+    return Response.ok();
+  }
+
+  transferMedallion(state: InternalState, userId: string, ctx: Context, request: ITransferMedallionRequest): Response {
+    if (state.currentRoundGameModule !== 'trading' && state?.turnNumber !== TOTAL_TURNS) {
+      return Response.error("Current round is not a trading round for medallion transfer");
+    }
+    //check if player has enough money to send
+    if (state.players.find((player) => player.id === userId)!.medallions < request.amount) {
+      return Response.error("Player does not have enough medallions");
+    }
+    //send money
+    state.players.find((player) => player.id === userId)!.medallions -= request.amount;
+    state.players.find((player) => player.id === request.playerIdToSendTo)!.medallions += request.amount;
+    if (request?.amount > 0) {
+      ctx.sendEvent(HathoraEventTypes.moneyTransfer, `You were just transferred ${request?.amount} medallion(s)!`, request?.playerIdToSendTo);
     }
     return Response.ok();
   }

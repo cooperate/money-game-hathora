@@ -163,6 +163,9 @@ methods:
   transferMoney:
     amount: int
     playerIdToSendTo: string
+  transferMedallion:
+    amount: int
+    playerIdToSendTo: string
   #Prize Draw
   enterTicketsAmount:
     tickets: int

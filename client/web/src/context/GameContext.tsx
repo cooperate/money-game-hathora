@@ -40,6 +40,7 @@ interface GameContext {
   removeMoneyFromBoxDecision: (playerId: string, amount: number) => Promise<void>;
   submitVote: (vote: boolean) => Promise<void>;
   lockVote : () => Promise<void>; 
+  transferMedallions: (amount: number, playerIdToSendTo: string) => Promise<void>;
 }
 
 export const getGameNameById = (roundGameModule: RoundGameModule | undefined): string => {
@@ -225,6 +226,15 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
     [connection]
   );
 
+  const transferMedallions = useCallback(
+    async (amount: number, playerIdToSendTo: string) => {
+      if (connection) {
+        await handleResponse(connection.transferMedallion({ amount, playerIdToSendTo }));
+      }
+    },
+    [connection]
+  );
+
   const lockPrize = useCallback(async () => {
     if (connection) {
       await handleResponse(connection.lockPrizeSelection({}));
@@ -384,6 +394,7 @@ export default function HathoraContextProvider({ children }: HathoraContextProvi
         removeMoneyFromBoxDecision,
         submitVote,
         lockVote,
+        transferMedallions
       }}
     >
       {children}
