@@ -94,8 +94,12 @@ export class Impl implements Methods<InternalState> {
     if (state.players.find((player) => player.id === userId) !== undefined) {
       return Response.error("Already joined");
     }
-    if (state.players.length >= 8) {
+    if (state.players.length > 10) {
       return Response.error("Maximum player count reached");
+    }
+    //if game is already started, don't allow new players to join
+    if (state.gameStatus === 'in-progress') {
+      return Response.error("Game already started");
     }
     state.players.push(createPlayer(userId));
     return Response.ok();
