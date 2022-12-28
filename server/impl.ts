@@ -217,6 +217,26 @@ export class Impl implements Methods<InternalState> {
    */
   //mapping internal server state to player state
   getUserState(state: InternalState, userId: UserId): PlayerState {
+    //if userId is not in players array, return undefined
+    if (!state.players.find((player) => player.id === userId)) {
+      //return empty user state
+      return {
+        self: undefined,
+        players: this.mapToPlayerInfo(state.players),
+        roundStatus: state.roundStatus,
+        activePlayer: state.players.length > 0 ? state.players[state.activePlayerIdx].id : undefined,
+        bank: state.bank,
+        prizeDraw: undefined,
+        lowestUniqueBidder: undefined,
+        pickAPrize: undefined,
+        magicMoneyMachine: undefined,
+        currentGame: this.mapToRoundGameModule(state.currentRoundGameModule),
+        turnNumber: state.turnNumber,
+        finalResults: state.displayFinalResults ? this.mapFinalResults(state.players) : undefined,
+        medallionVoteDecisionPlayer: undefined,
+        medallionVoteVotePlayer: undefined,
+      }
+    }
     let playerIsDecisionPlayer: boolean;
     //check which player has the most medallions
     const playerWithMostMedallions = state?.players.reduce((prev, current) => (prev.medallions > current.medallions) ? prev : current, state?.players?.[0]);
@@ -250,6 +270,7 @@ export class Impl implements Methods<InternalState> {
     return players.map((player) => ({
       id: player.id,
       lockedTrade: player.lockedTrade,
+      medallions: player?.medallions || 0,
     }));
   }
   mapToRoundGameModule(gameModule: GameModule | undefined): RoundGameModule | undefined {

@@ -30,6 +30,7 @@ types:
   PlayerInfo:
     id: UserId
     lockedTrade: boolean
+    medallions: int
   PlayerState:
     self: PlayerSelf?
     players: PlayerInfo[]
