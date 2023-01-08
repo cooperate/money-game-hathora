@@ -78,7 +78,7 @@ export default function TopBar() {
                     </span>
                     }
                 </div>
-
+                    
                 <div className="flex flex-row items-center gap-4">
                     <div className="flex flex-col items-center">
                         <span className="hidden lg:block">{user?.name}</span>

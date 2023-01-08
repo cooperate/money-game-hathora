@@ -4,22 +4,24 @@ import classNames from "classnames";
 
 import { useHathoraContext } from "../context/GameContext";
 import Logo from "../assets/hathora-hammer-logo-light.png";
+import Card from "../components/Card";
+import styled from 'styled-components';
 
+const BackgroundStyle = styled.div`
+background-color: #ad9494;
+`
 export default function Home() {
   const navigate = useNavigate();
   const { createGame } = useHathoraContext();
   const [gameId, setGameId] = useState<string>();
 
   return (
-    <div className="h-full bg-slate-100 flex justify-center items-center">
+    <div className="h-full flex justify-center items-center">
       <div className="flex flex-col rounded bg-white py-5 w-5/6 sm:w-2/3 lg:w-1/2 xl:w-2/5 shadow drop-shadow">
         <div className="flex flex-col justify-center items-center h-4/6 w-full text-2xl lg:text-4xl md:text-2xl font-semibold">
           <img src={Logo} style={{ width: 150 }} />
           <div>
             <strong>Money Game</strong>
-          </div>
-          <div>
-            created by <strong>Tom Scott </strong>
           </div>
         </div>
         <div className="flex flex-col rounded bg-white justify-center items-center h-2/6 w-full">
