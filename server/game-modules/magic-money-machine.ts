@@ -1,17 +1,13 @@
 import { ServerError } from "../impl";
 import { InternalPlayerInfo } from "../models/player";
 
-export class MagicMoneyMachinePlayer extends InternalPlayerInfo {
+export class MagicMoneyMachinePlayer {
     public winningsPerRound: number[] = [];
     public moneyInHand: number = 100;
     public moneyInBox: number = 0;
     public lockedMoney = false;
 
-    constructor(id: string, money: number, medallions: number) {
-        super(id);
-        this.money = money;
-        this.medallions = medallions;
-    }
+    constructor(public id: string) {}
 
     resetValues(): void {
         this.lockedMoney = false;
@@ -34,7 +30,7 @@ export class InternalMagicMoneyMachine {
     }
 
     createMagicMoneyMachinePlayers(players: InternalPlayerInfo[]): MagicMoneyMachinePlayer[] {
-        return players.map((player) => new MagicMoneyMachinePlayer(player.id, player.money, player.medallions));
+        return players.map((player) => new MagicMoneyMachinePlayer(player.id));
     }
 
     getMagicMoneyMachinePlayerById(id: string): MagicMoneyMachinePlayer {

@@ -22,15 +22,11 @@ export type InternalPlayerBox = {
     moneyInBox: number;
 }
 
-export class MedallionMajorityDecisionPlayer extends InternalPlayerInfo {
+export class MedallionMajorityDecisionPlayer {
     public lockDeposit = false;
     public moneyInBoxesPerRound: InternalPlayerBox[][] = [];
 
-    constructor(id: string, money: number, medallions: number) {
-        super(id);
-        this.money = money;
-        this.medallions = medallions;
-    }
+    constructor(public id: string) {}
 
     resetValues(): void {
         this.lockDeposit = false;
@@ -54,7 +50,7 @@ export class InternalMedallionMajorityVote {
     ) {
         this.maxRounds = _maxRounds;
         this.playersVoting = this.createMedallionPlayers(_playersVoting);
-        this.decisionPlayer = new MedallionMajorityDecisionPlayer(_decisionPlayer.id, _decisionPlayer.money, _decisionPlayer.medallions);
+        this.decisionPlayer = new MedallionMajorityDecisionPlayer(_decisionPlayer.id);
         this.phasingPlayer = 'MEDALLION_PLAYER';
         this.moneyAllocation = _bank;
     }

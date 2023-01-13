@@ -2,17 +2,13 @@ import { Response } from "../../api/base";
 import { ServerError } from "../impl";
 import { InternalPlayerInfo } from "../models/player";
 
-export class PrizeDrawPlayer extends InternalPlayerInfo {
+export class PrizeDrawPlayer {
     public tickets: number | undefined;
     public lockTickets = false;
     public winningsPerRound: number[] = [];
     public medallionsPerRound: number[] = [];
 
-    constructor(id: string, money: number, medallions: number) {
-        super(id);
-        this.money = money;
-        this.medallions = medallions;
-    }
+    constructor(public id: string) { }
 
     resetValues(): void {
         this.tickets = undefined;
@@ -35,7 +31,7 @@ export class InternalPrizeDraw {
     constructor(
         public _players: InternalPlayerInfo[],
         public _potsPerRound: number[],
-        public _medallionsPerRound: number[],
+        public _medallionsPerRound: number[]
     ) {
         this.maxRounds = _potsPerRound.length;
         this.setPotsPerRound(_potsPerRound);
@@ -78,7 +74,7 @@ export class InternalPrizeDraw {
             return "Player has already entered tickets";
         }
         //ensure tickets is a number
-        if(isNaN(ticketAmount)) {
+        if (isNaN(ticketAmount)) {
             return "Ticket amount must be a number";
         }
         if (ticketAmount < 0) {
@@ -105,7 +101,7 @@ export class InternalPrizeDraw {
             }
             return acc + player.tickets;
         }, 0);
-        if(totalTicketsInDraw > 0) {
+        if (totalTicketsInDraw > 0) {
             let winnings = this.potsPerRound[this.round] / totalTicketsInDraw;
             //round winnings down to nearest integer
             winnings = Math.floor(winnings);
@@ -147,10 +143,10 @@ export class InternalPrizeDraw {
     }
 
     private createPrizeDrawPlayers(players: InternalPlayerInfo[]): PrizeDrawPlayer[] {
-        return players.map((player) => new PrizeDrawPlayer(player.id, player.money, player.medallions));
+        return players.map((player) => new PrizeDrawPlayer(player.id));
     }
 
-    public lockTickets(player: PrizeDrawPlayer): void | ServerError{
+    public lockTickets(player: PrizeDrawPlayer): void | ServerError {
         if (player.tickets === undefined) {
             return "Player has not entered tickets";
         }

@@ -1,16 +1,12 @@
 import { InternalPlayerInfo } from "../models/player";
 
-export class LowestUniqueBidPlayer extends InternalPlayerInfo {
+export class LowestUniqueBidPlayer {
     public winningsPerRound: number[] = [];
     public medallionsPerRound: number[] = [];
     public chosenPaddle: number | undefined;
     public lockPaddle = false;
 
-    constructor(id: string, money: number, medallions: number) {
-        super(id);
-        this.money = money;
-        this.medallions = medallions;
-    }
+    constructor(public id: string) {}
 
     getRoundsWon(): boolean[] {
         return this.winningsPerRound.map((winnings) => winnings > 0);
@@ -65,7 +61,7 @@ export class InternalLowestUniqueBid {
     }
 
     createLowestUniqueBidPlayers(players: InternalPlayerInfo[]): LowestUniqueBidPlayer[] {
-        return players.map((player) => new LowestUniqueBidPlayer(player.id, player.money, player.medallions));
+        return players.map((player) => new LowestUniqueBidPlayer(player.id));
     }
 
     getLowestUniqueBidPlayerById(playerId: string): LowestUniqueBidPlayer {

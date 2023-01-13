@@ -1,17 +1,13 @@
 import { ServerError } from "../impl";
 import { InternalPlayerInfo } from "../models/player";
 
-export class PickAPrizePlayer extends InternalPlayerInfo {
+export class PickAPrizePlayer {
     public winningsPerRound: number[] = [];
     public medallionsPerRound: number[] = [];
     public chosenPrize: number | undefined;
     public lockPrizeSelection = false;
 
-    constructor(id: string, money: number, medallions: number) {
-        super(id);
-        this.money = money;
-        this.medallions = medallions;
-    }
+    constructor(public id: string) { }
 
     resetValues(): void {
         this.chosenPrize = undefined;
@@ -21,26 +17,23 @@ export class PickAPrizePlayer extends InternalPlayerInfo {
 
 export type InternalPrizeType = "money" | "medallions";
 export type InternalPrize = {
-    prizeType: InternalPrizeType,
-    amount: number,
-}
+    prizeType: InternalPrizeType;
+    amount: number;
+};
 
 export class InternalPickAPrize {
     public round = 0;
     public players: PickAPrizePlayer[];
     public prizesPerRound: InternalPrize[][];
     public bonusPrizePerRound: boolean[];
-    constructor(
-        public _players: InternalPlayerInfo[],
-        public _prizesPerRound: InternalPrize[][],
-    ) {
+    constructor(public _players: InternalPlayerInfo[], public _prizesPerRound: InternalPrize[][]) {
         this.players = this.createPickAPrizePlayers(_players);
         this.prizesPerRound = _prizesPerRound;
         this.bonusPrizePerRound = this.prizesPerRound.map((prizes) => true);
     }
 
     createPickAPrizePlayers(players: InternalPlayerInfo[]): PickAPrizePlayer[] {
-        return players.map((player) => new PickAPrizePlayer(player.id, player.money, player.medallions));
+        return players.map((player) => new PickAPrizePlayer(player.id));
     }
 
     getPickAPrizePlayerById(id: string): PickAPrizePlayer {
@@ -77,7 +70,7 @@ export class InternalPickAPrize {
     }
 
     lockPrizeSelection(player: PickAPrizePlayer): void | ServerError {
-        if(player.chosenPrize == undefined) {
+        if (player.chosenPrize == undefined) {
             return "You have not selected a prize";
         }
         if (player.lockPrizeSelection) {
@@ -113,7 +106,7 @@ export class InternalPickAPrize {
             }
         });
         //if the bonus prize is still available, randomly increase two prizes of type money by 50%, do not trigger on the last round
-        if (this.bonusPrizePerRound[this.round] && this.round < (this.prizesPerRound.length - 1)) {
+        if (this.bonusPrizePerRound[this.round] && this.round < this.prizesPerRound.length - 1) {
             const moneyPrizes = this.prizesPerRound[this.round + 1].filter((prize) => {
                 return prize.prizeType === "money";
             });
