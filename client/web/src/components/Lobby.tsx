@@ -4,25 +4,87 @@ import { ClipboardCopyIcon } from "@heroicons/react/outline";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import classNames from "classnames";
-
+import styled, { keyframes } from "styled-components";
 import { useHathoraContext } from "../context/GameContext";
 import { RoundStatus } from "../../../../api/types";
 import { useState } from "react";
-
+import Card from "./Card";
+import styles from '../constants/defaultStyles';
 interface LobbyProps {
   status: RoundStatus;
 }
+const gradientAnimation = keyframes`
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+`;
+
+const glowAnimation = keyframes`
+    0% {
+        box-shadow: 0 0 0px #ff0000;
+    }
+    100% {
+        box-shadow: 0 0 10px #ff0000;
+    }
+`;
+
+const AnimatedDiv = styled.div`
+    position: relative;
+    border: none;
+    padding: 10px 15px;
+    color: #fff;
+    font-size: 18px;
+    border-radius: 5px;
+    &:hover .glow {
+        animation: none;
+        box-shadow: 0 0 10px #ff0000;
+    }
+`;
+
+const AnimatedBackground = styled.div`
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to right, 
+        #ff0000, #ff7f00, #ffff00, #00ff00, 
+        #0000ff, #4b0082, #8b00ff);
+    background-size: 400% 400%;
+    background-position: 0% 50%;
+    animation: ${gradientAnimation} 3s ease-in-out infinite;
+    border-radius: 5px;
+    z-index: -1;
+`;
+
+const Glow = styled.div`
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    width: calc(100% + 10px);
+    height: calc(100% + 10px);
+    border-radius: 5px;
+    box-shadow: 0 0 0px #ff0000;
+    animation: ${glowAnimation} 2s ease-in-out infinite;
+`;
+
 
 export default function Lobby({ status }: LobbyProps) {
   const { gameId } = useParams();
-
+  const { button } = styles;
   const { playerState, getUserName, startGame, user } = useHathoraContext();
 
   const playerCount = playerState?.players?.length ?? 0;
   const disableStartGame = playerCount < 2;
   return (
     <div className="flex items-center justify-center flex-col h-full bg-slate-100 py-5 h-full">
-      <div className="p-5 lg:px-8 rounded shadow-black drop-shadow bg-white">
+      <Card>
         <h2 className="text-xl tracking-tight font-bold text-gray-900 mb-2 text-center">Invite Friends</h2>
         <CopyToClipboard text={window.location.href} onCopy={() => toast.success("Copied room link to clipboard!")}>
           <div className="cursor-pointer w-full flex flex-col items-center">
@@ -41,12 +103,14 @@ export default function Lobby({ status }: LobbyProps) {
             </div>
           </div>
         ))}
-        <div className="bg-slate-500 rounded-xl p-8 dark:bg-slate-800">
-          <div className="flex justify-center">
-            <p className="text-lg font-medium align-middle text-white">Bank ${playerState?.bank}</p>
+        <div className="flex flex-col my-4">
+          <AnimatedDiv className="w-full text-center">
+            <span className='text-white text-lg font-bold text-outline-red'>Bank ${playerState?.bank}</span>
+            <AnimatedBackground />
+            <Glow className='glow' />
+          </AnimatedDiv>
           </div>
-        </div>
-        <div className="flex-col">
+        <div className="flex flex-col gap-4">
           {disableStartGame && (
             <p className="text-xs text-gray-700">At least two players are required before starting the game</p>
           )}
@@ -54,7 +118,7 @@ export default function Lobby({ status }: LobbyProps) {
             onClick={() => startGame()}
             disabled={disableStartGame}
             className={classNames(
-              `mt-3 w-full block bg-blue-800 border border-blue-800 rounded p-2 text-xl font-semibold text-white text-center hover:bg-blue-900 h-fit`,
+              `h-fit w-full ${button.backgroundColor} ${button.default} ${button.fontColor} ${disableStartGame ? "bg-gray-500" : "bg-green-500"}`,
               {
                 "opacity-50": disableStartGame,
               }
@@ -63,7 +127,7 @@ export default function Lobby({ status }: LobbyProps) {
             {status === RoundStatus.WAITING ? "Start Game" : "Start Round"}
           </button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

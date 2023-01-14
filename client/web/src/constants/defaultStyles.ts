@@ -1,13 +1,14 @@
 export default {
   glossy: "bg-gray-800 bg-opacity-25 rounded-full px-4 py-2 text-white font-bold",
-  card: "rounded-3xl p-4 m-2",
+  card: "rounded-3xl p-8 m-2 bg-moneySecondary dark:bg-moneySecondaryDark text-moneyBlack dark:text-moneyText",
   flat: {
     shadow: "drop-shadow-md",
   },
   backgroundColor: "bg-white dark:bg-gray-800",
   fontColor: "text-gray-800 dark:text-white",
   button: {
-    backgroundColor: "bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600",
-    fontColor: "text-gray-800 hover:text-gray-900 dark:text-white dark:hover:text-gray-300",
+    default: "bg-opacity-25 rounded-full px-4 py-2 font-bold text-xl drop-shadow-md outline dark:outline-moneyText outline-moneyBlack",
+    backgroundColor: "bg-moneyPrimary hover:bg-moneyPrimary dark:bg-moneyPrimaryDark dark:hover:bg-moneyPrimaryDark",
+    fontColor: "text-moneyBlack hover:text-moneyBlack dark:text-moneyText dark:hover:text-moneyText",
   },
 };

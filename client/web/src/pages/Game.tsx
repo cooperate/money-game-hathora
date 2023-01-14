@@ -24,7 +24,7 @@ export default function Game() {
   };
 
   return (
-    <div className="h-full">
+    <div className="h-full bg-moneyPrimary dark:bg-moneyPrimaryDark">
       {RenderGame()}
     </div>
   );
