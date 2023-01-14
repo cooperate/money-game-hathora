@@ -11,10 +11,10 @@ const StyledDiv = styled.div`
 `;
 
 const Card: React.FC<CardProps> = ({ children }) => {
-  const { card, flat } = styles;
+  const { card, flat, global } = styles;
   return (
     <>
-      <StyledDiv className={`${card} ${flat.shadow}`}>
+      <StyledDiv className={`${global} ${card} ${flat.shadow}`}>
         {children}
       </StyledDiv>
     </>

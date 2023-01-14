@@ -2,7 +2,7 @@ import styled from "styled-components";
 import { useEffect, useState } from "react";
 import { useWindowSize } from "rooks";
 import classNames from "classnames";
-
+import styles from "../constants/defaultStyles";
 import { getGameNameById, getGameRoundByActiveGame, useHathoraContext } from "../context/GameContext";
 import { medallionSvg, moneySvg } from "../App";
 import { RoundGameModule } from "../../../../api/types";
@@ -29,7 +29,7 @@ export function nameAbbreviation(name: string) {
 export default function TopBar() {
     const { playerState, user, getUserName, startRound, endGame } = useHathoraContext();
     const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
-
+    const { global } = styles;
     const updateMedia = () => {
         setIsMobile(window.innerWidth < 900);
     };
@@ -41,9 +41,8 @@ export default function TopBar() {
 
     //create a top bar that shows the turn number, the bank total, the current game name, the current round in that game, and your name and money
     return (
-        <div className="w-full flex-1 flex flex-col">
-            <nav className="px-4 flex justify-between bg-white h-16 border-b-2">
-
+        <div className={`w-full flex-1 flex flex-col ${global} mb-4`}>
+            <nav className="px-4 flex justify-between bg-moneySecondary dark:bg-moneySecondaryDark h-16 drop-shadow-md">
                 <div className="flex flex-row items-center gap-4">
                     <span className="hidden lg:block">Bank Total</span>
                     <span className="flex flex-row md:flex-column">

@@ -2,22 +2,37 @@ import styled, { css, keyframes } from "styled-components";
 import { useState } from "react";
 import { lockedButtonClass, lockSvg, unlockedButtonClass, unlockSvg } from "../App";
 
-const clickFlashyAnimation = keyframes`
-    0% {
-        background-color: #fff;
+interface LockButtonProps {
+    isLocked: boolean;
+}
+
+const LockButtonStyled = styled.button<LockButtonProps>`
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 20px;
+  width: auto;
+  height: 40px;
+  font-size: 1rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  text-transform: uppercase;
+  font-weight: bold;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+  transition: background-color 0.2s ease-in-out;
+  &:hover {
+    cursor: pointer;
+    background-color: #3e8e41;
+  }
+  ${({ isLocked }) => isLocked && css`
+    background-color: #f44336;
+    &:hover {
+      background-color: #d32f2f;
     }
-    50% {
-        background-color: #000;
-    }
-    100% {
-        background-color: #fff;
-    }`;
-const styles = css`
-    animation: ${clickFlashyAnimation} 0.5s linear;
-`;
-const LockButtonStyled = styled.button`
-    animation: ${({animate}: {animate: boolean}) => animate ? styles: ""};
-`;
+  `}
+`
 export default function LockButton({
     callbackToLock,
     isLocked,
@@ -29,20 +44,10 @@ export default function LockButton({
     lockText: string;
     unlockText: string;
 }) {
-    const [animateNow, setAnimateNow] = useState(false);
     return (
         <LockButtonStyled
-            animate={animateNow}
-            onClick={() => {
-                //apply clickFlashyAnimation to class
-                setAnimateNow(true);
-                callbackToLock();
-                //after 3 seconds remove animation
-                setTimeout(() => {
-                    setAnimateNow(false);
-                }, 3000);
-            }}
-            className={isLocked ? lockedButtonClass : unlockedButtonClass}
+            isLocked={isLocked}
+            onClick={callbackToLock}
         >
             {isLocked ? lockSvg() : unlockSvg()}
             {isLocked ? lockText : unlockText}
